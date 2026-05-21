@@ -198,7 +198,7 @@
             </div>
             <div class="grid-2-col">
                 <button class="btn-block" style="background: var(--panel-hover); border: 1px solid var(--border);" onclick="guardarCotizacion()">Guardar</button>
-                <button class="btn-block btn-add" onclick="procesarVenta()">Vender</button>
+                <button class="btn-block btn-add" id="btn-procesar-venta" onclick="procesarVenta()">Vender</button>
             </div>
         </section>
 
@@ -226,10 +226,16 @@
         <div class="modal-content" style="background: var(--bg-dark); max-width: 600px;">
             <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--accent);">📦 Agregar Nuevo Producto</h2>
             
-            <label class="btn-foto-peq" style="margin-bottom: 15px; background: var(--panel-hover); color: white; border: 1px dashed var(--accent);">
-                📷 Agregar Foto Principal (Galería o Cámara)
-                <input type="file" accept="image/*" capture="environment" onchange="actualizarFotoNp(this, 'main')">
-            </label>
+            <div class="grid-2-col" style="margin-bottom: 15px;">
+                <label class="btn-foto-peq" style="background: var(--panel-hover); color: white; border: 1px dashed var(--accent); margin: 0;">
+                    📁 Subir Foto
+                    <input type="file" accept="image/*" onchange="actualizarFotoNp(this, 'main')">
+                </label>
+                <label class="btn-foto-peq" style="background: var(--panel-hover); color: white; border: 1px dashed var(--accent); margin: 0;">
+                    📷 Tomar Foto
+                    <input type="file" accept="image/*" capture="environment" onchange="actualizarFotoNp(this, 'main')">
+                </label>
+            </div>
             <img id="np-img-preview" style="display:none; width:100%; height:180px; object-fit:cover; border-radius:8px; margin-bottom:15px; border:1px solid var(--border);">
 
             <div class="grid-2-col">
@@ -303,10 +309,16 @@
         <div class="modal-content" style="background: var(--bg-dark); max-width: 600px;">
             <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--warning);">Modo Edición</h2>
             
-            <label class="btn-foto-peq" style="margin-bottom: 15px; background: var(--accent); color: white; border: none;">
-                Cambiar Foto Principal del Producto
-                <input type="file" accept="image/*" capture="environment" onchange="actualizarFoto(this, 'main')">
-            </label>
+            <div class="grid-2-col" style="margin-bottom: 15px;">
+                <label class="btn-foto-peq" style="background: var(--accent); color: white; border: none; margin: 0;">
+                    📁 Subir Foto
+                    <input type="file" accept="image/*" onchange="actualizarFoto(this, 'main')">
+                </label>
+                <label class="btn-foto-peq" style="background: var(--accent); color: white; border: none; margin: 0;">
+                    📷 Tomar Foto
+                    <input type="file" accept="image/*" capture="environment" onchange="actualizarFoto(this, 'main')">
+                </label>
+            </div>
 
             <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Nombre del Artículo</label>
             <input type="text" id="edit-nom" class="input-box">
@@ -414,7 +426,6 @@
         let baseDeDatos = []; let carrito = []; let cotizaciones = []; let ventasTotales = 0;
         let productoActivoModal = null; let varianteActivaModal = null; let totalCarritoActual = 0;
 
-        // CARGA LOCAL SOLO PARA FINANZAS Y CARRITO
         function cargarRestoDatosLocales() {
             let ventasG = localStorage.getItem('sdc_ventas');
             if(ventasG) { ventasTotales = parseFloat(ventasG); }
@@ -423,7 +434,7 @@
         }
 
         function guardarDatosLocales() {
-            localStorage.setItem('sdc_bd', JSON.stringify(baseDeDatos)); // Backup temporal
+            localStorage.setItem('sdc_bd', JSON.stringify(baseDeDatos));
             localStorage.setItem('sdc_ventas', ventasTotales);
             localStorage.setItem('sdc_cots', JSON.stringify(cotizaciones));
         }
@@ -450,36 +461,27 @@
             document.getElementById('dash-ventas').innerText = `Lps. ${Math.round(ventasTotales)}`;
         }
 
-        // --- LA MAGIA: LEER DESDE LA NUBE AL INICIAR ---
         async function inicializarCatalogo() {
             const contProd = document.getElementById('contenedor-productos');
             contProd.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--accent); font-weight: bold; padding: 20px;">☁️ Conectando con la Nube...</p>';
             
-            // Esperamos a que el módulo de Firebase (abajo) termine de cargar
-            while(typeof window.cargarDesdeFirebase !== 'function') {
-                await new Promise(r => setTimeout(r, 100));
-            }
+            while(typeof window.cargarDesdeFirebase !== 'function') { await new Promise(r => setTimeout(r, 100)); }
 
             try {
-                // Descargar catálogo fresco desde Firebase
                 baseDeDatos = await window.cargarDesdeFirebase();
-                localStorage.setItem('sdc_bd', JSON.stringify(baseDeDatos)); // Backup por si falla el internet luego
+                localStorage.setItem('sdc_bd', JSON.stringify(baseDeDatos)); 
             } catch (e) {
                 console.error("Error al descargar de la nube:", e);
-                // Si no hay internet, cargamos el backup
                 let bdGuardada = localStorage.getItem('sdc_bd');
                 if(bdGuardada) baseDeDatos = JSON.parse(bdGuardada);
                 mostrarToast("Sin conexión. Usando datos locales guardados.");
             }
 
             cargarRestoDatosLocales();
-
             const cat = ['Todos', ...new Set(baseDeDatos.map(p => p.categoria))];
             document.getElementById('contenedor-filtros').innerHTML = cat.map(c => `<button class="btn-cat ${c==='Todos'?'activo':''}" onclick="filtrar('${c}', this)">${c}</button>`).join('');
             
-            renderizarProductos(baseDeDatos); 
-            actualizarDashboard(); 
-            renderCotizaciones();
+            renderizarProductos(baseDeDatos); actualizarDashboard(); renderCotizaciones();
         }
 
         function filtrar(c, btn) {
@@ -673,6 +675,7 @@
             }
         }
 
+        // DIBUJAR VARIANTES NUEVO PRODUCTO CON BOTONES SEPARADOS
         function renderNpVar() {
             const list = document.getElementById('np-variantes-lista'); list.innerHTML = '';
             npVarTemp.forEach((v, i) => {
@@ -683,10 +686,17 @@
                         <input type="number" class="input-box" style="width:80px;" value="${v.stock}" onchange="npVarTemp[${i}].stock=parseInt(this.value)" placeholder="Stock">
                         <button class="btn-quitar-fila" onclick="npVarTemp.splice(${i},1); renderNpVar();">✕</button>
                     </div>
-                    <label class="btn-foto-peq">
-                        📷 Asignar Foto a "${v.nombre}"
-                        <input type="file" accept="image/*" capture="environment" onchange="actualizarFotoNp(this, ${i})">
-                    </label>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 5px;">Foto para "${v.nombre}"</p>
+                    <div class="grid-2-col">
+                        <label class="btn-foto-peq" style="margin:0;">
+                            📁 Subir
+                            <input type="file" accept="image/*" onchange="actualizarFotoNp(this, ${i})">
+                        </label>
+                        <label class="btn-foto-peq" style="margin:0;">
+                            📷 Tomar
+                            <input type="file" accept="image/*" capture="environment" onchange="actualizarFotoNp(this, ${i})">
+                        </label>
+                    </div>
                 </div>`;
             });
         }
@@ -762,6 +772,7 @@
             document.getElementById('modal-editar').classList.add('activo');
         }
 
+        // DIBUJAR VARIANTES EDICIÓN CON BOTONES SEPARADOS
         function renderEditorV() {
             const list = document.getElementById('edit-variantes-lista'); list.innerHTML = '';
             edVarTemp.forEach((v, i) => {
@@ -772,10 +783,17 @@
                         <input type="number" class="input-box" style="width:80px;" value="${v.stock}" onchange="edVarTemp[${i}].stock=parseInt(this.value)" placeholder="Stock">
                         <button class="btn-quitar-fila" onclick="edVarTemp.splice(${i},1); renderEditorV();">✕</button>
                     </div>
-                    <label class="btn-foto-peq">
-                        📷 Asignar Foto a "${v.nombre}"
-                        <input type="file" accept="image/*" capture="environment" onchange="actualizarFoto(this, ${i})">
-                    </label>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 5px;">Foto para "${v.nombre}"</p>
+                    <div class="grid-2-col">
+                        <label class="btn-foto-peq" style="margin:0;">
+                            📁 Subir
+                            <input type="file" accept="image/*" onchange="actualizarFoto(this, ${i})">
+                        </label>
+                        <label class="btn-foto-peq" style="margin:0;">
+                            📷 Tomar
+                            <input type="file" accept="image/*" capture="environment" onchange="actualizarFoto(this, ${i})">
+                        </label>
+                    </div>
                 </div>`;
             });
         }
@@ -806,25 +824,17 @@
             productoActivoModal.promos = edProTemp;
             
             try {
-                // Actualizamos los datos en Firebase
                 await window.actualizarFirebase(productoActivoModal.id, {
-                    nombre: productoActivoModal.nombre,
-                    costo: productoActivoModal.costo,
-                    precio: productoActivoModal.precio,
-                    variantes: productoActivoModal.variantes,
-                    promos: productoActivoModal.promos,
-                    img: productoActivoModal.img
+                    nombre: productoActivoModal.nombre, costo: productoActivoModal.costo, precio: productoActivoModal.precio,
+                    variantes: productoActivoModal.variantes, promos: productoActivoModal.promos, img: productoActivoModal.img
                 });
 
                 guardarDatosLocales(); 
                 document.getElementById('modal-editar').classList.remove('activo');
-                mostrarToast("Producto Modificado en la Nube"); 
-                abrirModal(productoActivoModal.id); 
-                inicializarCatalogo(); 
+                mostrarToast("Producto Modificado en la Nube"); abrirModal(productoActivoModal.id); inicializarCatalogo(); 
                 if(carrito.length > 0) calcularTotalesCarrito();
             } catch(e) {
-                console.error(e);
-                alert("Hubo un problema actualizando la nube.");
+                console.error(e); alert("Hubo un problema actualizando la nube.");
             }
             btn.innerText = "Guardar Cambios"; btn.disabled = false;
         }
@@ -834,7 +844,64 @@
             setTimeout(() => t.classList.remove('mostrar'), 3000);
         }
 
-        // ... (resto de funciones de factura y whatsapp intactas) ...
+        // --- SISTEMA DE VENTAS INTELIGENTE CONECTADO A FIREBASE ---
+        async function procesarVenta() {
+            if(carrito.length === 0) return alert("Tu carrito está vacío");
+
+            const btn = document.getElementById("btn-procesar-venta");
+            if(btn) { btn.innerText = "Procesando Venta..."; btn.disabled = true; }
+
+            try {
+                // 1. Preparamos el recibo de la orden
+                let datosOrden = {
+                    cliente: document.getElementById('c-nombre').value || 'Consumidor Final',
+                    telefono: document.getElementById('c-tel').value || 'No especificado',
+                    destino: `${document.getElementById('c-muni').value || ''}, ${document.getElementById('c-depto').value || ''}`,
+                    paqueteria: document.getElementById('c-paquetera').value,
+                    articulos: carrito,
+                    total: totalCarritoActual,
+                    fecha: new Date().toISOString()
+                };
+
+                // 2. Guardamos el recibo en la carpeta "ventas" de Firebase
+                await window.registrarVentaFirebase(datosOrden);
+
+                // 3. Modificamos el stock y guardamos qué productos tocamos
+                let idsProductosAfectados = new Set();
+                carrito.forEach(itemCarrito => {
+                    let productoBD = baseDeDatos.find(p => p.id === itemCarrito.id);
+                    if(productoBD) {
+                        let varianteBD = productoBD.variantes.find(v => v.nombre === itemCarrito.variante);
+                        if(varianteBD) {
+                            varianteBD.stock -= itemCarrito.cantidad;
+                            idsProductosAfectados.add(productoBD.id);
+                        }
+                    }
+                });
+
+                // 4. Subimos el nuevo stock de cada producto tocado a Firebase
+                for(let id of idsProductosAfectados) {
+                    let productoActualizado = baseDeDatos.find(p => p.id === id);
+                    await window.actualizarFirebase(id, { variantes: productoActualizado.variantes });
+                }
+
+                // 5. Finalizamos
+                ventasTotales += totalCarritoActual; 
+                guardarDatosLocales();
+                document.getElementById('dash-ventas').innerText = `Lps. ${Math.round(ventasTotales)}`;
+                
+                limpiarCarrito(); 
+                inicializarCatalogo();
+                mostrarToast("¡Venta Exitosa! Inventario actualizado en la Nube.");
+
+            } catch (error) {
+                console.error("Error al vender:", error);
+                alert("Hubo un error al procesar la venta. Revisa tu internet.");
+            }
+
+            if(btn) { btn.innerText = "Vender"; btn.disabled = false; }
+        }
+
         function enviarWhatsApp() {
             if(carrito.length===0) return alert("El carrito está vacío");
             let cli = document.getElementById('c-nombre').value || 'Consumidor Final';
@@ -936,19 +1003,6 @@
             guardarDatosLocales(); renderCotizaciones(); cambiarVista('carrito', document.querySelectorAll('nav button')[2]);
         }
 
-        function procesarVenta() {
-            if(carrito.length===0) return alert("Tu carrito está vacío");
-            carrito.forEach(iC => {
-                let pBD = baseDeDatos.find(p => p.id === iC.id);
-                let vBD = pBD.variantes.find(v => v.nombre === iC.variante);
-                if(vBD) vBD.stock -= iC.cantidad;
-            });
-            ventasTotales += totalCarritoActual; 
-            guardarDatosLocales();
-            document.getElementById('dash-ventas').innerText = `Lps. ${Math.round(ventasTotales)}`;
-            limpiarCarrito(); inicializarCatalogo(); mostrarToast("Venta Cerrada. Stock actualizado.");
-        }
-
         function limpiarCarrito() {
             carrito = []; document.getElementById('cart-badge').innerText = 0;
             ['c-nombre', 'c-tel', 'c-dir'].forEach(id => document.getElementById(id).value = '');
@@ -965,7 +1019,6 @@
     </script>
 
     <script type="module">
-        // 1. Importamos las herramientas clave: getDocs (leer), doc y updateDoc (editar)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -982,19 +1035,15 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // FUNCIÓN A: LEER TODOS LOS PRODUCTOS DE LA NUBE
         window.cargarDesdeFirebase = async function() {
             const querySnapshot = await getDocs(collection(db, "productos"));
             let productosDescargados = [];
-            
             querySnapshot.forEach((documento) => {
                 let data = documento.data();
                 productosDescargados.push({
-                    id: documento.id, // El ID único que le pone Firebase
-                    nombre: data.nombre,
-                    categoria: data.categoria || "General",
-                    costo: data.costo || 0,
-                    precio: data.precio || 0,
+                    id: documento.id,
+                    nombre: data.nombre, categoria: data.categoria || "General",
+                    costo: data.costo || 0, precio: data.precio || 0,
                     img: data.img || '',
                     variantes: data.variantes || [{ nombre: 'Estándar', stock: data.stock_inicial || 0, img: '' }],
                     promos: data.promos || []
@@ -1003,7 +1052,6 @@
             return productosDescargados;
         };
 
-        // FUNCIÓN B: CREAR UN PRODUCTO NUEVO
         window.guardarNuevoFirebase = async function(nombre, categoria, costo, precio, img, variantes, promos) {
             const docRef = await addDoc(collection(db, "productos"), {
                 nombre: nombre, categoria: categoria, costo: costo, precio: precio,
@@ -1013,10 +1061,14 @@
             return docRef.id;
         };
 
-        // FUNCIÓN C: ACTUALIZAR UN PRODUCTO EXISTENTE (EDICIÓN)
         window.actualizarFirebase = async function(idProducto, datosNuevos) {
             const referenciaDocumento = doc(db, "productos", idProducto);
             await updateDoc(referenciaDocumento, datosNuevos);
+        };
+
+        window.registrarVentaFirebase = async function(datosOrden) {
+            const docRef = await addDoc(collection(db, "ventas"), datosOrden);
+            return docRef.id;
         };
     </script>
 </body>
