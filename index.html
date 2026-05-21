@@ -42,12 +42,46 @@
 
         footer { text-align: center; padding: 15px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); background: var(--panel-bg); flex-shrink: 0; }
 
-        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        .dash-card { background: var(--panel-bg); border: 1px solid var(--border); padding: 15px; border-radius: var(--radius); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .dash-card h3 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
-        .dash-card p { font-size: 20px; font-weight: 800; color: white; }
-        .card-full { grid-column: span 2; background: linear-gradient(145deg, var(--panel-bg), var(--panel-hover)); border-color: var(--accent); }
+/* --- NUEVOS ESTILOS MEJORADOS PARA EL DASHBOARD --- */
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        
+        .dash-card { 
+            background: rgba(21, 30, 46, 0.7); /* Fondo semi-transparente */
+            backdrop-filter: blur(10px); /* Efecto cristal moderno */
+            border: 1px solid rgba(255, 255, 255, 0.05); /* Borde súper sutil */
+            padding: 20px 15px; 
+            border-radius: 20px; /* Bordes más redondeados */
+            text-align: center; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2); /* Sombra suave flotante */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: transform 0.2s;
+        }
+        .dash-card:active { transform: scale(0.98); }
+        
+        .icon-wrapper { font-size: 26px; margin-bottom: 10px; opacity: 0.9; }
+        .dash-card h3 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; letter-spacing: 0.5px; }
+        .dash-card p { font-size: 24px; font-weight: 800; color: white; }
+        
+        .card-full { grid-column: span 2; }
+        
+        /* Colores sutiles para tarjetas de alerta */
+        .dash-card.warning { background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.1); }
+        .dash-card.danger { background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.1); }
+        .dash-card.success { background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.1); }
 
+        /* Mejora para la tarjeta de Bienvenida */
+        .welcome-card {
+            background: linear-gradient(135deg, #1e3a8a 0%, var(--panel-bg) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 25px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 25px;
+        }
+        .welcome-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .btn-outline { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 15px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-outline:active { background: rgba(255,255,255,0.1); }
+        /* ------------------------------------------------ */
         .input-box, select, textarea { width: 100%; padding: 14px; margin-bottom: 15px; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: var(--radius); font-size: 14px; outline: none; transition: 0.3s; }
         .input-box:focus, select:focus, textarea:focus { border-color: var(--accent); }
         .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
