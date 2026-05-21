@@ -160,23 +160,46 @@
     </nav>
 
     <main>
-        <section id="vista-inicio" class="vista activa">
-            <div class="item-lista" style="border-color: var(--accent); background: linear-gradient(145deg, var(--panel-bg), #1e293b); padding: 25px;">
-                <h1 style="font-size: 26px; margin-bottom: 5px; color: white;">¡Hola, Profe Coello! 👋</h1>
-                <p style="color: var(--text-muted); font-size: 14px;" id="saludo-fecha"></p>
+<section id="vista-inicio" class="vista activa">
+            
+            <div class="welcome-card">
+                <h1 style="font-size: 24px; margin-bottom: 5px; color: white;">¡Hola, Profe Coello! 👋</h1>
+                <p style="color: var(--text-muted); font-size: 13px;" id="saludo-fecha"></p>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px;">
-                    <button class="btn-block btn-add" style="margin-bottom: 0;" onclick="cambiarVista('catalogo', document.querySelectorAll('nav button')[1])">Nueva Venta</button>
-                    <button class="btn-block" style="background: var(--bg-dark); border: 1px solid var(--border); margin-bottom: 0;" onclick="cambiarVista('cotizaciones', document.querySelectorAll('nav button')[3])">Ver Órdenes</button>
+                <div class="welcome-actions">
+                    <button class="btn-block btn-add" style="margin: 0;" onclick="cambiarVista('catalogo', document.querySelectorAll('nav button')[1])">Nueva Venta</button>
+                    <button class="btn-outline" onclick="cambiarVista('cotizaciones', document.querySelectorAll('nav button')[3])">Ver Órdenes</button>
                 </div>
             </div>
             
-            <h2 style="font-size: 14px; color: var(--text-muted); margin-top: 25px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Estado del Inventario</h2>
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <h2 style="font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Estado del Inventario</h2>
+            </div>
+
             <div class="dash-grid" style="margin-top: 0;">
-                <div class="dash-card"><h3>Total Artículos</h3><p id="op-tot">0</p></div>
-                <div class="dash-card warning"><h3>Bajo Stock</h3><p id="op-baj">0</p></div>
-                <div class="dash-card danger"><h3>Faltan Fotos</h3><p id="op-fot">0</p></div>
-                <div class="dash-card success"><h3>Valor Neto</h3><p id="op-inv">Lps. 0</p></div>
+                <div class="dash-card">
+                    <div class="icon-wrapper" style="color: var(--accent);">📦</div>
+                    <h3>Artículos</h3>
+                    <p id="op-tot">0</p>
+                </div>
+                
+                <div class="dash-card warning">
+                    <div class="icon-wrapper" style="color: var(--warning);">⚠️</div>
+                    <h3>Bajo Stock</h3>
+                    <p id="op-baj">0</p>
+                </div>
+                
+                <div class="dash-card danger">
+                    <div class="icon-wrapper" style="color: var(--danger);">🖼️</div>
+                    <h3>Sin Fotos</h3>
+                    <p id="op-fot">0</p>
+                </div>
+                
+                <div class="dash-card success card-full">
+                    <div class="icon-wrapper" style="color: var(--success);">💰</div>
+                    <h3>Valor Neto de Inversión</h3>
+                    <p id="op-inv">Lps. 0</p>
+                </div>
             </div>
         </section>
 
