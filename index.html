@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDC ERP | Profe Coello</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --panel-bg: #151e2e; --panel-hover: #1e293b;
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --accent: #3b82f6; --accent-glow: rgba(59, 130, 246, 0.4);
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --border: #1e293b; --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+        /* ENCABEZADO Y NAVEGACIÓN PREMIUM */
+        header { padding: 20px 20px 10px; background: var(--bg-dark); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .logo-text { font-weight: 800; font-size: 22px; letter-spacing: -0.5px; color: white; }
+        .logo-text span { color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
+        .time-badge { font-size: 12px; color: var(--text-muted); background: var(--panel-bg); padding: 6px 12px; border-radius: 20px; font-weight: 600; display: flex; align-items: center; gap: 6px; letter-spacing: 0.5px; }
+        
+        nav { background-color: var(--bg-dark); padding: 5px 20px 15px; display: flex; overflow-x: auto; gap: 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; scroll-behavior: smooth; }
+        nav::-webkit-scrollbar { display: none; }
+        nav button { background: transparent; border: none; color: var(--text-muted); padding: 8px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 600; font-size: 14px; transition: all 0.3s ease; flex-shrink: 0; }
+        nav button:hover { color: var(--text-main); }
+        nav button.activo { background-color: var(--accent); color: white; box-shadow: 0 4px 15px var(--accent-glow); }
+
+        main { padding: 20px; flex-grow: 1; overflow-y: auto; padding-bottom: 30px; }
+        .vista { display: none; animation: fadeIn 0.2s ease; }
+        .vista.activa { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        footer { text-align: center; padding: 15px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); background: var(--panel-bg); flex-shrink: 0; }
+
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+        .dash-card { background: var(--panel-bg); border: 1px solid var(--border); padding: 15px; border-radius: var(--radius); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .dash-card h3 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
+        .dash-card p { font-size: 20px; font-weight: 800; color: white; }
+        .card-full { grid-column: span 2; background: linear-gradient(145deg, var(--panel-bg), var(--panel-hover)); border-color: var(--accent); }
+
+        .input-box, select, textarea { width: 100%; padding: 14px; margin-bottom: 15px; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: var(--radius); font-size: 14px; outline: none; transition: 0.3s; }
+        .input-box:focus, select:focus, textarea:focus { border-color: var(--accent); }
+        .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .filtros-cat { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px; }
+        .filtros-cat::-webkit-scrollbar { display: none; }
+        .btn-cat { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; font-weight: 500; }
+        .btn-cat.activo { border-color: var(--accent); color: var(--accent); background: rgba(59, 130, 246, 0.1); font-weight: 700; }
+        
+        .grid-catalogo { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .card-prod { background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; cursor: pointer; position: relative; transition: transform 0.2s; }
+        .card-prod:active { transform: scale(0.98); }
+        .card-prod img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; background: #000; }
+        .tag-stock { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
+        .precio-card { color: var(--success); font-weight: 800; font-size: 16px; margin-top: 5px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.activo { opacity: 1; pointer-events: auto; }
+        .modal-content { background: var(--panel-bg); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 25px; transform: translateY(100%); transition: 0.3s; border-top: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.activo .modal-content { transform: translateY(0); }
+        
+        .m-img-preview { width: 100%; height: 220px; object-fit: cover; border-radius: var(--radius); margin-bottom: 15px; background: #000; border: 1px solid var(--border); transition: 0.3s; }
+        
+        .variantes-container { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+        .btn-variante { background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-main); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
+        .btn-variante.seleccionado { border-color: var(--accent); background: rgba(59, 130, 246, 0.2); color: var(--accent); }
+        .btn-variante.sin-stock { opacity: 0.4; text-decoration: line-through; pointer-events: none; border-color: var(--danger); }
+
+        .control-cantidad { display: flex; align-items: center; justify-content: center; gap: 15px; background: var(--bg-dark); padding: 10px; border-radius: var(--radius); margin: 20px 0; border: 1px solid var(--border); }
+        .btn-circulo { width: 40px; height: 40px; border-radius: 10px; border: none; background: var(--panel-hover); color: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-circulo:active { background: var(--border); }
+        .input-cant { width: 50px; text-align: center; background: transparent; border: none; color: white; font-size: 20px; font-weight: 800; }
+        
+        .btn-block { width: 100%; padding: 15px; border: none; border-radius: var(--radius); font-weight: 700; font-size: 14px; cursor: pointer; color: white; transition: 0.3s; margin-bottom: 10px; }
+        .btn-add { background: linear-gradient(135deg, var(--accent), #2563eb); box-shadow: 0 4px 15px var(--accent-glow); }
+        .btn-add:active { transform: translateY(2px); }
+        .btn-cerrar { background-color: var(--bg-dark); border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-editar-ico { background-color: transparent; border: 1px dashed var(--text-muted); color: var(--text-muted); margin-top: 10px; }
+        
+        .item-lista { background: var(--bg-dark); padding: 15px; border-radius: var(--radius); margin-bottom: 10px; border: 1px solid var(--border); }
+        
+        .edicion-fila { background: var(--bg-dark); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; }
+        .edicion-grid { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-bottom: 10px; }
+        .edicion-fila .input-box { margin-bottom: 0; padding: 10px; }
+        .btn-quitar-fila { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-foto-peq { background: var(--panel-hover); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; display: block; text-align: center; font-weight: 600; }
+        input[type="file"] { display: none; }
+
+        .toast { position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: bold; transition: 0.3s; z-index: 2000; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); }
+        .toast.mostrar { bottom: 20px; }
+
+        /* FACTURA */
+        #contenedor-factura { position: absolute; left: -9999px; top: 0; background: white; color: black; width: 420px; padding: 30px; font-family: 'Inter', sans-serif; }
+        .fac-header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 15px; margin-bottom: 15px; }
+        .fac-info-box { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; border: 1px solid #e2e8f0; }
+        .fac-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+        .fac-total { font-weight: 800; font-size: 20px; border-top: 2px dashed #ccc; padding-top: 15px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-text">SDC <span>Master</span></div>
+        <div class="time-badge">
+            <span style="display:inline-block; width:6px; height:6px; background:var(--success); border-radius:50%; box-shadow: 0 0 5px var(--success);"></span>
+            <span id="fecha-hora-header"></span>
+        </div>
+    </header>
+
+    <nav>
+        <button class="activo" onclick="cambiarVista('inicio', this)">Inicio</button>
+        <button onclick="cambiarVista('catalogo', this)">Catálogo</button>
+        <button onclick="cambiarVista('carrito', this)">Carrito (<span id="cart-badge">0</span>)</button>
+        <button onclick="cambiarVista('cotizaciones', this)">Cotizaciones</button>
+        <button onclick="cambiarVista('dashboard', this)">Finanzas</button>
+    </nav>
+
+    <main>
+        <section id="vista-inicio" class="vista activa">
+            <div class="item-lista" style="border-color: var(--accent); background: linear-gradient(145deg, var(--panel-bg), #1e293b); padding: 25px;">
+                <h1 style="font-size: 26px; margin-bottom: 5px; color: white;">¡Hola, Profe Coello! 👋</h1>
+                <p style="color: var(--text-muted); font-size: 14px;" id="saludo-fecha"></p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px;">
+                    <button class="btn-block btn-add" style="margin-bottom: 0;" onclick="cambiarVista('catalogo', document.querySelectorAll('nav button')[1])">Nueva Venta</button>
+                    <button class="btn-block" style="background: var(--bg-dark); border: 1px solid var(--border); margin-bottom: 0;" onclick="cambiarVista('cotizaciones', document.querySelectorAll('nav button')[3])">Ver Órdenes</button>
+                </div>
+            </div>
+            
+            <h2 style="font-size: 14px; color: var(--text-muted); margin-top: 25px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Estado del Inventario</h2>
+            <div class="dash-grid" style="margin-top: 0;">
+                <div class="dash-card"><h3>Total Artículos</h3><p id="op-tot">0</p></div>
+                <div class="dash-card warning"><h3>Bajo Stock</h3><p id="op-baj">0</p></div>
+                <div class="dash-card danger"><h3>Faltan Fotos</h3><p id="op-fot">0</p></div>
+                <div class="dash-card success"><h3>Valor Neto</h3><p id="op-inv">Lps. 0</p></div>
+            </div>
+        </section>
+
+        <section id="vista-catalogo" class="vista">
+            <input type="text" id="buscador" class="input-box" placeholder="Escribe el nombre del producto..." onkeyup="buscarProducto()">
+            <div class="filtros-cat" id="contenedor-filtros"></div>
+            <div class="grid-catalogo" id="contenedor-productos"></div>
+        </section>
+
+        <section id="vista-carrito" class="vista">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Logística de Envío</h2>
+            
+            <input type="text" id="c-nombre" class="input-box" placeholder="Nombre del Cliente">
+            <input type="tel" id="c-tel" class="input-box" placeholder="Teléfono del Cliente">
+            
+            <div class="grid-2-col">
+                <select id="c-depto" class="input-box" onchange="cargarMunicipios()"></select>
+                <select id="c-muni" class="input-box"><option value="">Seleccione Municipio</option></select>
+            </div>
+            <textarea id="c-dir" class="input-box" placeholder="Dirección Exacta..." rows="2"></textarea>
+
+            <div class="grid-2-col">
+                <select id="c-paquetera" class="input-box">
+                    <option value="Local">Entrega Local</option>
+                    <option value="Forza">Forza Delivery</option>
+                    <option value="C807">C807</option>
+                    <option value="Cargo Expreso">Cargo Expreso</option>
+                </select>
+                <select id="tipoEnvio" class="input-box" onchange="calcularTotalesCarrito()">
+                    <option value="local">Recogida Local (Lps. 0)</option>
+                    <option value="normal">Envío Normal (+ Lps. 110)</option>
+                    <option value="contra_entrega">Pagar al recibir (CCE) (+ Lps. 110 + 6%)</option>
+                </select>
+            </div>
+
+            <h2 style="font-size: 16px; margin: 25px 0 15px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Detalle de la Orden</h2>
+            <div id="lista-carrito"></div>
+
+            <div style="background: var(--panel-bg); padding: 20px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;"><span>Ahorro Promociones:</span><span id="txt-aho" style="color:var(--success); font-weight: bold;">- Lps. 0</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;"><span>Costo Envío:</span><span id="txt-env">Lps. 0</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: var(--warning);" id="div-com"><span>Comisión (CCE):</span><span id="txt-com">Lps. 0</span></div>
+                <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 22px; border-top: 1px dashed var(--border); padding-top: 15px; margin-top: 15px; color: white;"><span>TOTAL A PAGAR:</span><span id="txt-tot">Lps. 0</span></div>
+            </div>
+
+            <div class="grid-2-col" style="margin-bottom: 10px;">
+                <button class="btn-block" style="background: #10b981;" onclick="enviarWhatsApp()">WhatsApp</button>
+                <button class="btn-block" style="background: var(--warning); color: #000;" onclick="generarImagenFactura()">Previa Foto</button>
+            </div>
+            <div class="grid-2-col">
+                <button class="btn-block" style="background: var(--panel-hover); border: 1px solid var(--border);" onclick="guardarCotizacion()">Guardar</button>
+                <button class="btn-block btn-add" onclick="procesarVenta()">Vender</button>
+            </div>
+        </section>
+
+        <section id="vista-cotizaciones" class="vista">
+            <h2 style="font-size: 16px; margin-bottom: 15px;">Órdenes Pendientes</h2>
+            <div id="lista-cotizaciones"></div>
+        </section>
+
+        <section id="vista-dashboard" class="vista">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: var(--warning);">Datos Financieros</h2>
+            <div class="dash-grid">
+                <div class="dash-card card-full"><h3>Ventas Concretadas (Efectivo)</h3><p id="dash-ventas" style="color: var(--success); font-size: 32px;">Lps. 0</p></div>
+                <div class="dash-card"><h3>Inversión Total</h3><p id="dash-inv">Lps. 0</p></div>
+                <div class="dash-card"><h3>Proyección Venta</h3><p id="dash-proy">Lps. 0</p></div>
+                <div class="dash-card card-full" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success);"><h3>Ganancia Neta Esperada</h3><p id="dash-gan" style="color: var(--success); font-size: 28px;">Lps. 0</p></div>
+            </div>
+            
+            <button class="btn-block" style="margin-top: 30px; background: transparent; border: 1px solid var(--danger); color: var(--danger);" onclick="resetearSistema()">Restablecer Inventario de Fábrica</button>
+        </section>
+    </main>
+
+    <footer>SDC ERP • Soluciones Digitales Comayagua | El Profe Coello</footer>
+
+    <div class="modal-overlay" id="modal-producto">
+        <div class="modal-content">
+            <img id="m-img" class="m-img-preview" src="">
+            <p id="m-categoria" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;"></p>
+            <h2 id="m-nombre" style="font-size: 22px; margin: 5px 0 10px; color: white;"></h2>
+            <p id="m-precio" class="precio-card" style="font-size: 20px;"></p>
+            
+            <div id="m-promos-text" style="margin-top: 15px;"></div>
+            
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 20px; font-weight: 600;">Colores y Variantes disponibles:</p>
+            <div class="variantes-container" id="m-variantes"></div>
+            
+            <p style="font-size: 13px; font-weight: bold; text-align: center; color: var(--accent);" id="m-stock-texto">Stock: -</p>
+            
+            <div class="control-cantidad">
+                <button class="btn-circulo" onclick="modCantidadModal(-1)">-</button>
+                <input type="text" id="m-cantidad" class="input-cant" value="1" readonly>
+                <button class="btn-circulo" onclick="modCantidadModal(1)">+</button>
+            </div>
+
+            <button class="btn-block btn-add" onclick="agregarDesdeModal()" style="font-size: 16px; padding: 18px;">Añadir al Carrito</button>
+            <div class="grid-2-col" style="margin-top: 10px;">
+                <button class="btn-block btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+                <button class="btn-block" style="background: var(--success); color: white;" onclick="irAlCarrito()">Ir al Carrito</button>
+            </div>
+            
+            <button class="btn-block btn-editar-ico" onclick="abrirModalEdicion()">Modificar Producto</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-editar">
+        <div class="modal-content" style="background: var(--bg-dark); max-width: 600px;">
+            <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--warning);">Modo Edición</h2>
+            
+            <label class="btn-foto-peq" style="margin-bottom: 15px; background: var(--accent); color: white; border: none;">
+                Cambiar Foto Principal del Producto
+                <input type="file" accept="image/*" onchange="actualizarFoto(this, 'main')">
+            </label>
+
+            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Nombre del Artículo</label>
+            <input type="text" id="edit-nom" class="input-box">
+            
+            <div class="grid-2-col">
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Costo Real (Lps.)</label>
+                    <input type="number" id="edit-cos" class="input-box" placeholder="Costo">
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Precio Venta (Lps.)</label>
+                    <input type="number" id="edit-pre" class="input-box" placeholder="Precio">
+                </div>
+            </div>
+
+            <h3 style="font-size: 14px; margin: 15px 0 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Colores y Stock</h3>
+            <div id="edit-variantes-lista"></div>
+            <button class="btn-block" style="background: var(--panel-hover); border: 1px dashed var(--text-muted);" onclick="agregarFilaVariante()">+ Añadir Nuevo Color</button>
+
+            <h3 style="font-size: 14px; margin: 20px 0 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Descuentos por Volumen</h3>
+            <div id="edit-promos-lista"></div>
+            <button class="btn-block" style="background: var(--panel-hover); border: 1px dashed var(--text-muted);" onclick="agregarFilaPromo()">+ Añadir Descuento</button>
+
+            <div class="grid-2-col" style="margin-top: 25px;">
+                <button class="btn-block btn-cerrar" onclick="document.getElementById('modal-editar').classList.remove('activo')">Cancelar</button>
+                <button class="btn-block btn-add" onclick="guardarEdicion()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast-msg">Mensaje</div>
+
+    <div id="contenedor-factura">
+        <div class="fac-header">
+            <h1 style="font-size: 22px; font-weight: 800; color: #000; margin-bottom: 5px;">SOLUCIONES DIGITALES COMAYAGUA</h1>
+            <p id="f-fecha" style="font-size: 12px; color: #555;"></p>
+            <p id="f-codigo" style="font-size: 14px; font-weight: bold; margin-top: 5px;"></p>
+        </div>
+        <div class="fac-info-box">
+            <p><b>Cliente:</b> <span id="f-cli"></span></p>
+            <p><b>Teléfono:</b> <span id="f-tel"></span></p>
+            <p><b>Destino:</b> <span id="f-zona"></span></p>
+            <p><b>Dirección:</b> <span id="f-dir"></span></p>
+            <p><b>Paquetera:</b> <span id="f-paq"></span></p>
+        </div>
+        <div style="border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 5px; font-size: 13px;"><b>CANT | DESCRIPCIÓN</b> <span style="float: right;"><b>TOTAL</b></span></div>
+        <div id="f-items"></div>
+        <div class="fac-row" style="margin-top: 20px; color:#555;"><span>Subtotal Base:</span> <span id="f-sub">Lps. 0</span></div>
+        <div class="fac-row" style="color:#059669; font-weight:bold;"><span>Ahorro Promociones:</span> <span id="f-aho">- Lps. 0</span></div>
+        <div class="fac-row" style="color:#555;"><span>Costo de Envío:</span> <span id="f-env">Lps. 0</span></div>
+        <div class="fac-row" id="f-row-com" style="color:#555;"><span>Comisión de Servicio (CCE):</span> <span id="f-com">Lps. 0</span></div>
+        <div class="fac-row fac-total"><span>TOTAL A PAGAR:</span> <span id="f-tot">Lps. 0</span></div>
+    </div>
+
+    <script>
+        const ahora = new Date();
+        document.getElementById('fecha-hora-header').innerText = ahora.toLocaleTimeString('es-HN', {hour: '2-digit', minute:'2-digit'});
+        document.getElementById('saludo-fecha').innerText = `${ahora.getHours() < 12 ? 'Buenos días' : 'Buenas tardes'}, hoy es ${ahora.toLocaleDateString('es-HN')}`;
+
+        const deptosHN = {
+            "Atlántida": ["La Ceiba", "El Porvenir", "Esparta", "Jutiapa", "La Masica", "San Francisco", "Tela", "Arizona"],
+            "Choluteca": ["Choluteca", "Apacilagua", "Concepción de María", "Duyure", "El Corpus", "El Triunfo", "Marcovia", "Morolica", "Namasigüe", "Orocuina", "Pespire", "San Antonio de Flores", "San Isidro", "San José", "San Marcos de Colón", "Santa Ana de Yusguare"],
+            "Colón": ["Trujillo", "Balfate", "Iriona", "Limón", "Sabá", "Santa Fe", "Santa Rosa de Aguán", "Sonaguera", "Tocoa", "Bonito Oriental"],
+            "Comayagua": ["Comayagua", "Ajuterique", "El Rosario", "Esquías", "Humuya", "La Libertad", "Lamaní", "La Trinidad", "Lejamaní", "Meámbar", "Minas de Oro", "Ojos de Agua", "San Jerónimo", "San José de Comayagua", "San José del Potrero", "San Luis", "Siguatepeque", "Taulabé", "Villa de San Antonio", "Las Lajas"],
+            "Copán": ["Santa Rosa de Copán", "Cabañas", "Concepción", "Copán Ruinas", "Corquín", "Cucuyagua", "Dolores", "Dulce Nombre", "El Paraíso", "Florida", "La Jigua", "La Unión", "Nueva Arcadia", "San Agustín", "San Antonio", "San Jerónimo", "San José", "San Juan de Opoa", "San Nicolás", "San Pedro", "Santa Rita", "Trinidad de Copán", "Veracruz"],
+            "Cortés": ["San Pedro Sula", "Choloma", "Omoa", "Pimienta", "Potrerillos", "Puerto Cortés", "San Antonio de Cortés", "San Francisco de Yojoa", "San Manuel", "Santa Cruz de Yojoa", "Villanueva", "La Lima"],
+            "El Paraíso": ["Yuscarán", "Alauca", "Danlí", "El Paraíso", "Güinope", "Jacaleapa", "Liure", "Morocelí", "Oropolí", "Potrerillos", "San Lucas", "San Matías", "Soledad", "Teupasenti", "Texiguat", "Vado Ancho", "Yauyupe", "Trojes"],
+            "Francisco Morazán": ["Tegucigalpa", "Alubarén", "Cedros", "Curarén", "El Porvenir", "Guaimaca", "La Libertad", "La Venta", "Lepaterique", "Maraita", "Marale", "Nueva Armenia", "Ojojona", "Orica", "Reitoca", "Sabanagrande", "San Antonio de Oriente", "San Buenaventura", "San Ignacio", "San Juan de Flores", "San Miguelito", "Santa Ana", "Santa Lucía", "Talanga", "Tatumbla", "Valle de Ángeles", "Villa de San Francisco", "Vallecillo"],
+            "Gracias a Dios": ["Puerto Lempira", "Brus Laguna", "Ahuas", "Juan Francisco Bulnes", "Villeda Morales", "Wampusirpi"],
+            "Intibucá": ["La Esperanza", "Camasca", "Colomoncagua", "Concepción", "Dolores", "Intibucá", "Jesús de Otoro", "Magdalena", "Masaguara", "San Antonio", "San Isidro", "San Juan", "San Marcos de la Sierra", "San Miguel Guancapla", "Santa Lucía", "Yamaranguila", "San Francisco de Opalaca"],
+            "Islas de la Bahía": ["Roatán", "Guanaja", "José Santos Guardiola", "Utila"],
+            "La Paz": ["La Paz", "Aguanqueterique", "Cabañas", "Cane", "Chinacla", "Guajiquiro", "Lauterique", "Marcala", "Mercedes de Oriente", "San Antonio del Norte", "San José", "San Juan", "San Pedro de Tutule", "Santa Ana", "Santa Elena", "Santa María", "Santiago de Puringla", "Yarula", "Opatoro"],
+            "Lempira": ["Gracias", "Belén", "Candelaria", "Cololaca", "Erandique", "Gualcince", "Guarita", "La Campa", "La Iguala", "Las Flores", "La Unión", "Lepaera", "Mapulaca", "Piraera", "San Andrés", "San Francisco", "San Juan Guarita", "San Manuel Colohete", "San Marcos de Caiquín", "San Rafael", "San Sebastián", "Santa Cruz", "Talgua", "Tambla", "Tomalá", "Valladolid", "Virginia"],
+            "Ocotepeque": ["Ocotepeque", "Belén Gualcho", "Concepción", "Dolores Merendón", "Fraternidad", "La Encarnación", "La Labor", "Lucerna", "Mercedes", "San Fernando", "San Francisco del Valle", "San Jorge", "San Marcos", "Santa Fe", "Sinuapa", "Sensenti"],
+            "Olancho": ["Juticalpa", "Campamento", "Catacamas", "Concordia", "Dulce Nombre de Culmí", "El Rosario", "Esquipulas del Norte", "Gualaco", "Guarizama", "Guata", "Ignacio", "Jano", "La Unión", "Mangulile", "Manto", "Patuca", "Salamá", "San Francisco de Becerra", "San Francisco de la Paz", "Santa María del Real", "Silca", "Yocón"],
+            "Santa Bárbara": ["Santa Bárbara", "Arada", "Atima", "Azacualpa", "Ceguaca", "Colinas", "Concepción del Norte", "Concepción del Sur", "Chinda", "El Nispero", "Gualala", "Ilama", "Macuelizo", "Naranjito", "Nuevo Celilac", "Petoa", "Protección", "Quimistán", "San Francisco de Ojuera", "San Luis", "San Marcos", "San Nicolás", "San Pedro Zacapa", "Santa Rita", "San Vicente Centenario", "Trinidad", "Las Vegas", "Nueva Frontera"],
+            "Valle": ["Nacaome", "Alianza", "Amapala", "Aramecina", "Caridad", "Goascorán", "Langue", "San Francisco de Coray", "San Lorenzo"],
+            "Yoro": ["Yoro", "Arenal", "El Negrito", "El Progreso", "Jocón", "Morazán", "Olanchito", "Santa Rita", "Sulaco", "Victoria", "Yorito"]
+        };
+
+        function initLugares() {
+            const depto = document.getElementById('c-depto');
+            depto.innerHTML = '<option value="">Seleccione Departamento</option>';
+            Object.keys(deptosHN).sort().forEach(d => depto.innerHTML += `<option value="${d}">${d}</option>`);
+            depto.value = "Comayagua"; cargarMunicipios(); document.getElementById('c-muni').value = "Comayagua";
+        }
+
+        function cargarMunicipios() {
+            const d = document.getElementById('c-depto').value;
+            const muni = document.getElementById('c-muni');
+            muni.innerHTML = '<option value="">Seleccione Municipio</option>';
+            if(d && deptosHN[d]) deptosHN[d].sort().forEach(m => muni.innerHTML += `<option value="${m}">${m}</option>`);
+        }
+
+        // BASE DE DATOS INICIAL
+        let bd_inicial = [
+            { 
+                id: 'p1', nombre: 'Dedales Gamer V1', categoria: 'Gaming', costo: 10, precio: 25, 
+                img: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=500&q=80',
+                variantes: [
+                    { nombre: 'Negro con Rojo', stock: 15, img: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=500&q=80' }, 
+                    { nombre: 'Gris Espacial', stock: 8, img: 'https://images.unsplash.com/photo-1598550473307-e5ecb5c40134?w=500&q=80' }, 
+                    { nombre: 'Azul Neón', stock: 0, img: '' }
+                ],
+                promos: [ { cant: 3, precio: 24 }, { cant: 5, precio: 23 }, { cant: 8, precio: 22 }, { cant: 10, precio: 20 } ]
+            },
+            { 
+                id: 'p2', nombre: 'Cargador Carga Rápida 20W', categoria: 'Accesorios', costo: 120, precio: 250, 
+                img: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=500&q=80',
+                variantes: [ { nombre: 'Blanco', stock: 10, img: '' }, { nombre: 'Negro', stock: 5, img: '' } ], promos: []
+            }
+        ];
+
+        let baseDeDatos = []; let carrito = []; let cotizaciones = []; let ventasTotales = 0;
+        let productoActivoModal = null; let varianteActivaModal = null; let totalCarritoActual = 0;
+
+        // SISTEMA DE GUARDADO LOCAL (PERSISTENCIA)
+        function cargarDatosLocales() {
+            let bdGuardada = localStorage.getItem('sdc_bd');
+            if(bdGuardada) { baseDeDatos = JSON.parse(bdGuardada); } else { baseDeDatos = JSON.parse(JSON.stringify(bd_inicial)); }
+            
+            let ventasG = localStorage.getItem('sdc_ventas');
+            if(ventasG) { ventasTotales = parseFloat(ventasG); }
+            
+            let cotsG = localStorage.getItem('sdc_cots');
+            if(cotsG) { cotizaciones = JSON.parse(cotsG); }
+        }
+
+        function guardarDatosLocales() {
+            localStorage.setItem('sdc_bd', JSON.stringify(baseDeDatos));
+            localStorage.setItem('sdc_ventas', ventasTotales);
+            localStorage.setItem('sdc_cots', JSON.stringify(cotizaciones));
+        }
+
+        function resetearSistema() {
+            if(confirm("¿Estás seguro? Esto borrará tus ventas, ediciones y restablecerá el inventario a su estado de fábrica.")) {
+                localStorage.removeItem('sdc_bd'); localStorage.removeItem('sdc_ventas'); localStorage.removeItem('sdc_cots');
+                location.reload();
+            }
+        }
+
+        function actualizarDashboard() {
+            let tStk = 0; let bStk = 0; let sFot = 0; let inv = 0; let proy = 0;
+            baseDeDatos.forEach(p => {
+                let pStk = 0;
+                p.variantes.forEach(v => { pStk += v.stock; if(v.stock > 0 && v.stock < 3) bStk++; });
+                tStk += pStk; inv += (pStk * p.costo); proy += (pStk * p.precio);
+                if(!p.img || p.img === '') sFot++;
+            });
+            document.getElementById('op-tot').innerText = tStk; document.getElementById('op-baj').innerText = bStk;
+            document.getElementById('op-fot').innerText = sFot; document.getElementById('op-inv').innerText = `Lps. ${inv}`;
+            document.getElementById('dash-inv').innerText = `Lps. ${inv}`; document.getElementById('dash-proy').innerText = `Lps. ${proy}`;
+            document.getElementById('dash-gan').innerText = `Lps. ${proy - inv}`;
+            document.getElementById('dash-ventas').innerText = `Lps. ${Math.round(ventasTotales)}`;
+        }
+
+        function inicializarCatalogo() {
+            cargarDatosLocales();
+            const cat = ['Todos', ...new Set(baseDeDatos.map(p => p.categoria))];
+            document.getElementById('contenedor-filtros').innerHTML = cat.map(c => `<button class="btn-cat ${c==='Todos'?'activo':''}" onclick="filtrar('${c}', this)">${c}</button>`).join('');
+            renderizarProductos(baseDeDatos); actualizarDashboard(); renderCotizaciones();
+        }
+
+        function filtrar(c, btn) {
+            document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('activo')); btn.classList.add('activo');
+            renderizarProductos(c === 'Todos' ? baseDeDatos : baseDeDatos.filter(p => p.categoria === c));
+        }
+
+        function buscarProducto() {
+            let txt = document.getElementById('buscador').value.toLowerCase();
+            renderizarProductos(baseDeDatos.filter(p => p.nombre.toLowerCase().includes(txt)));
+        }
+
+        function renderizarProductos(arr) {
+            const cont = document.getElementById('contenedor-productos'); cont.innerHTML = '';
+            arr.forEach(prod => {
+                const stk = prod.variantes.reduce((s, v) => s + v.stock, 0);
+                const badge = stk > 0 ? `<span class="tag-stock">${stk} en stock</span>` : `<span class="tag-stock" style="background:var(--danger)">Agotado</span>`;
+                cont.innerHTML += `<div class="card-prod" onclick="abrirModal('${prod.id}')">${badge}<img src="${prod.img || 'https://via.placeholder.com/250'}"><h3>${prod.nombre}</h3><p class="precio-card">Lps. ${Math.round(prod.precio)}</p></div>`;
+            });
+        }
+
+        function abrirModal(id) {
+            productoActivoModal = baseDeDatos.find(p => p.id === id);
+            document.getElementById('m-img').src = productoActivoModal.img || 'https://via.placeholder.com/500';
+            document.getElementById('m-categoria').innerText = productoActivoModal.categoria;
+            document.getElementById('m-nombre').innerText = productoActivoModal.nombre;
+            document.getElementById('m-precio').innerText = `Lps. ${Math.round(productoActivoModal.precio)}`;
+            
+            let pt = '';
+            if(productoActivoModal.promos && productoActivoModal.promos.length > 0) {
+                let sortedP = [...productoActivoModal.promos].sort((a,b)=>a.cant-b.cant);
+                pt = '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Descuentos por volumen:</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">';
+                sortedP.forEach((pr, index) => {
+                    let bg = index % 2 === 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+                    let color = index % 2 === 0 ? 'var(--accent)' : 'var(--success)';
+                    let border = index % 2 === 0 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)';
+                    pt += `<div style="background: ${bg}; color: ${color}; padding: 8px; border-radius: 8px; font-size: 12px; border: 1px solid ${border}; font-weight: 700; text-align: center;">Llevas ${pr.cant} o más:<br><span style="font-size: 14px;">Lps. ${Math.round(pr.precio)} c/u</span></div>`;
+                });
+                pt += '</div>';
+            }
+            document.getElementById('m-promos-text').innerHTML = pt;
+
+            const contVar = document.getElementById('m-variantes'); contVar.innerHTML = '';
+            productoActivoModal.variantes.forEach((v, i) => {
+                const clas = v.stock === 0 ? 'sin-stock' : '';
+                contVar.innerHTML += `<button class="btn-variante ${clas}" id="var-btn-${i}" onclick="selVariante(${i})">${v.nombre}</button>`;
+            });
+            
+            const idx = productoActivoModal.variantes.findIndex(v => v.stock > 0);
+            if(idx !== -1) selVariante(idx); else { document.getElementById('m-stock-texto').innerText = 'Agotado'; varianteActivaModal = null; }
+            document.getElementById('modal-producto').classList.add('activo');
+        }
+
+        function selVariante(i) {
+            varianteActivaModal = productoActivoModal.variantes[i];
+            document.querySelectorAll('.btn-variante').forEach(b => b.classList.remove('seleccionado'));
+            document.getElementById(`var-btn-${i}`).classList.add('seleccionado');
+            document.getElementById('m-stock-texto').innerText = `Disponible: ${varianteActivaModal.stock} unidades`;
+            document.getElementById('m-cantidad').value = 1;
+            if(varianteActivaModal.img) document.getElementById('m-img').src = varianteActivaModal.img;
+            else document.getElementById('m-img').src = productoActivoModal.img || 'https://via.placeholder.com/500';
+        }
+
+        function modCantidadModal(v) {
+            if(!varianteActivaModal) return;
+            let n = parseInt(document.getElementById('m-cantidad').value) + v;
+            if(n >= 1 && n <= varianteActivaModal.stock) document.getElementById('m-cantidad').value = n;
+        }
+
+        function cerrarModal() { document.getElementById('modal-producto').classList.remove('activo'); }
+        function irAlCarrito() { cerrarModal(); cambiarVista('carrito', document.querySelectorAll('nav button')[2]); }
+
+        function agregarDesdeModal() {
+            if(!varianteActivaModal) return;
+            let cant = parseInt(document.getElementById('m-cantidad').value);
+            let idU = productoActivoModal.id + '-' + varianteActivaModal.nombre;
+            let itm = carrito.find(i => i.idUnico === idU);
+            if (itm && itm.cantidad + cant > varianteActivaModal.stock) return alert("Superas el stock");
+
+            if(itm) itm.cantidad += cant;
+            else carrito.push({ idUnico: idU, id: productoActivoModal.id, nombre: productoActivoModal.nombre, variante: varianteActivaModal.nombre, precioBase: productoActivoModal.precio, cantidad: cant });
+
+            document.getElementById('cart-badge').innerText = carrito.reduce((s, i) => s + i.cantidad, 0);
+            calcularTotalesCarrito(); mostrarToast(`Agregado: ${cant}x ${varianteActivaModal.nombre}`);
+            document.getElementById('m-cantidad').value = 1;
+        }
+
+        function getPromoDinamica(idProd, cantTotalBase) {
+            let p = baseDeDatos.find(x => x.id === idProd);
+            if(!p || !p.promos || p.promos.length === 0) return p.precio;
+            let ordenadas = [...p.promos].sort((a,b) => b.cant - a.cant);
+            for(let pr of ordenadas) { if(cantTotalBase >= pr.cant) return pr.precio; }
+            return p.precio;
+        }
+
+        function calcularTotalesCarrito() {
+            const list = document.getElementById('lista-carrito'); list.innerHTML = '';
+            let sB = 0; let sP = 0; let agrupados = {};
+            
+            carrito.forEach((it, origIdx) => {
+                if(!agrupados[it.id]) agrupados[it.id] = { id: it.id, nombre: it.nombre, precioBase: it.precioBase, cantidadTotal: 0, items: [] };
+                agrupados[it.id].cantidadTotal += it.cantidad;
+                agrupados[it.id].items.push({ ...it, idxReal: origIdx });
+            });
+
+            Object.values(agrupados).forEach(grupo => {
+                let pP = getPromoDinamica(grupo.id, grupo.cantidadTotal);
+                let lBase = grupo.precioBase * grupo.cantidadTotal;
+                let lPromo = pP * grupo.cantidadTotal;
+                sB += lBase; sP += lPromo;
+
+                let htmlItems = '';
+                grupo.items.forEach(it => {
+                    let totalLinea = pP * it.cantidad; 
+                    htmlItems += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-main); margin-top:8px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+                        <span>${it.cantidad}x ${it.variante} <b style="color:var(--accent);">(Lps. ${Math.round(totalLinea)})</b></span>
+                        <span onclick="eliminar(${it.idxReal})" style="color:var(--danger); cursor:pointer; font-weight:bold; font-size: 11px; text-transform: uppercase;">Quitar</span>
+                    </div>`;
+                });
+
+                let msgPromo = grupo.precioBase > pP ? `<div style="font-size:12px; color:var(--success); margin-top:10px; font-weight:600;">✅ Aplica promo: Sale a Lps. ${Math.round(pP)} c/u</div>` : '';
+
+                list.innerHTML += `
+                <div class="item-lista" style="padding:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <b style="font-size:15px; color: var(--accent);">${grupo.cantidadTotal}x ${grupo.nombre}</b>
+                        <b style="color:var(--success); font-size:16px;">Lps. ${Math.round(lPromo)}</b>
+                    </div>
+                    ${htmlItems}
+                    ${msgPromo}
+                </div>`;
+            });
+
+            if(carrito.length === 0) list.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 20px;">Tu carrito está vacío</p>';
+
+            let env = 0; let com = 0; const tE = document.getElementById('tipoEnvio').value;
+            if(tE !== 'local') env = 110;
+            if(tE === 'contra_entrega') { 
+                let comExacta = (sP + env) * 0.06;
+                if(comExacta > 0) com = Math.ceil(comExacta) + 1;
+                document.getElementById('div-com').style.display='flex'; 
+            } else document.getElementById('div-com').style.display='none';
+
+            totalCarritoActual = sP + env + com;
+            document.getElementById('txt-aho').innerText = `- Lps. ${Math.round(sB - sP)}`;
+            document.getElementById('txt-env').innerText = `Lps. ${env}`;
+            document.getElementById('txt-com').innerText = `Lps. ${com}`;
+            document.getElementById('txt-tot').innerText = `Lps. ${Math.round(totalCarritoActual)}`;
+        }
+
+        function eliminar(idxReal) { carrito.splice(idxReal, 1); document.getElementById('cart-badge').innerText = carrito.reduce((s,i)=>s+i.cantidad,0); calcularTotalesCarrito(); }
+
+        // ADMINISTRADOR
+        let edVarTemp = []; let edProTemp = [];
+        
+        function actualizarFoto(input, idx) {
+            if (input.files && input.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function (e) {
+                    if(idx === 'main') productoActivoModal.img = e.target.result;
+                    else edVarTemp[idx].img = e.target.result;
+                    mostrarToast("Foto temporal cargada a la memoria.");
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function abrirModalEdicion() {
+            document.getElementById('edit-nom').value = productoActivoModal.nombre;
+            document.getElementById('edit-cos').value = Math.round(productoActivoModal.costo);
+            document.getElementById('edit-pre').value = Math.round(productoActivoModal.precio);
+            
+            edVarTemp = JSON.parse(JSON.stringify(productoActivoModal.variantes));
+            edProTemp = JSON.parse(JSON.stringify(productoActivoModal.promos || []));
+            
+            renderEditorV(); renderEditorP();
+            document.getElementById('modal-editar').classList.add('activo');
+        }
+
+        function renderEditorV() {
+            const list = document.getElementById('edit-variantes-lista'); list.innerHTML = '';
+            edVarTemp.forEach((v, i) => {
+                list.innerHTML += `
+                <div class="edicion-fila">
+                    <div class="edicion-grid">
+                        <input type="text" class="input-box" value="${v.nombre}" onchange="edVarTemp[${i}].nombre=this.value" placeholder="Color/Nombre">
+                        <input type="number" class="input-box" style="width:80px;" value="${v.stock}" onchange="edVarTemp[${i}].stock=parseInt(this.value)" placeholder="Stock">
+                        <button class="btn-quitar-fila" onclick="edVarTemp.splice(${i},1); renderEditorV();">✕</button>
+                    </div>
+                    <label class="btn-foto-peq">
+                        Asignar Foto a "${v.nombre}"
+                        <input type="file" accept="image/*" onchange="actualizarFoto(this, ${i})">
+                    </label>
+                </div>`;
+            });
+        }
+
+        function renderEditorP() {
+            const list = document.getElementById('edit-promos-lista'); list.innerHTML = '';
+            edProTemp.forEach((p, i) => {
+                list.innerHTML += `
+                <div class="edicion-grid" style="margin-bottom:10px;">
+                    <input type="number" class="input-box" placeholder="Cant. mínima" value="${p.cant}" onchange="edProTemp[${i}].cant=parseInt(this.value)">
+                    <input type="number" class="input-box" placeholder="Precio nuevo" value="${Math.round(p.precio)}" onchange="edProTemp[${i}].precio=parseInt(this.value)">
+                    <button class="btn-quitar-fila" onclick="edProTemp.splice(${i},1); renderEditorP();">✕</button>
+                </div>`;
+            });
+        }
+
+        function agregarFilaVariante() { edVarTemp.push({ nombre: '', stock: 0, img: '' }); renderEditorV(); }
+        function agregarFilaPromo() { edProTemp.push({ cant: 2, precio: Math.round(productoActivoModal.precio) - 1 }); renderEditorP(); }
+
+        function guardarEdicion() {
+            productoActivoModal.nombre = document.getElementById('edit-nom').value;
+            productoActivoModal.costo = parseFloat(document.getElementById('edit-cos').value);
+            productoActivoModal.precio = parseFloat(document.getElementById('edit-pre').value);
+            productoActivoModal.variantes = edVarTemp; productoActivoModal.promos = edProTemp;
+            
+            guardarDatosLocales(); 
+            document.getElementById('modal-editar').classList.remove('activo');
+            mostrarToast("Producto guardado y sincronizado"); abrirModal(productoActivoModal.id); inicializarCatalogo(); 
+            if(carrito.length > 0) calcularTotalesCarrito();
+        }
+
+        function mostrarToast(msg) {
+            const t = document.getElementById('toast-msg'); t.innerText = msg; t.classList.add('mostrar');
+            setTimeout(() => t.classList.remove('mostrar'), 3000);
+        }
+
+        function enviarWhatsApp() {
+            if(carrito.length===0) return alert("El carrito está vacío");
+            let cli = document.getElementById('c-nombre').value || 'Consumidor Final';
+            let tel = document.getElementById('c-tel').value || 'No especificado';
+            let zona = `${document.getElementById('c-muni').value || ''}, ${document.getElementById('c-depto').value || ''}`;
+            let paq = document.getElementById('c-paquetera').value;
+
+            let m = `*SDC - COMAYAGUA*\n_Resumen de tu Orden_\n\n*Cliente:* ${cli}\n*Teléfono:* ${tel}\n*Destino:* ${zona}\n*Paquetera:* ${paq}\n\n*Detalle de Artículos:*\n`;
+            
+            let agrupados = {};
+            carrito.forEach((it) => {
+                if(!agrupados[it.id]) agrupados[it.id] = { id: it.id, nombre: it.nombre, precioBase: it.precioBase, cantidadTotal: 0, items: [] };
+                agrupados[it.id].cantidadTotal += it.cantidad; agrupados[it.id].items.push(it);
+            });
+
+            Object.values(agrupados).forEach(g => {
+                let pP = getPromoDinamica(g.id, g.cantidadTotal);
+                m += `\n[ ${g.cantidadTotal}x ${g.nombre} ] -> Total: Lps. ${Math.round(pP * g.cantidadTotal)}\n`;
+                g.items.forEach(it => m += ` - ${it.cantidad}x ${it.variante} (Lps. ${Math.round(pP * it.cantidad)})\n`);
+            });
+
+            m += `\n*Ahorro:* ${document.getElementById('txt-aho').innerText}\n*Envío:* ${document.getElementById('txt-env').innerText}\n`;
+            if(document.getElementById('tipoEnvio').value === 'contra_entrega') m += `*Comisión CCE:* ${document.getElementById('txt-com').innerText}\n`;
+            m += `\n*TOTAL NETO A PAGAR: ${document.getElementById('txt-tot').innerText}*`;
+            
+            window.open(`https://wa.me/?text=${encodeURIComponent(m)}`, '_blank');
+        }
+
+        function armarFac() {
+            document.getElementById('f-fecha').innerText = new Date().toLocaleString('es-HN');
+            document.getElementById('f-codigo').innerText = `ORDEN: SDC-${Date.now().toString().slice(-5)}`;
+            document.getElementById('f-cli').innerText = document.getElementById('c-nombre').value || 'Consumidor Final';
+            document.getElementById('f-tel').innerText = document.getElementById('c-tel').value || 'No especificado';
+            document.getElementById('f-zona').innerText = `${document.getElementById('c-muni').value || ''}, ${document.getElementById('c-depto').value || ''}`;
+            document.getElementById('f-dir').innerText = document.getElementById('c-dir').value || 'No especificada';
+            document.getElementById('f-paq').innerText = document.getElementById('c-paquetera').value;
+
+            const items = document.getElementById('f-items'); items.innerHTML = '';
+            let sB = 0; let agrupados = {};
+            
+            carrito.forEach((it) => {
+                if(!agrupados[it.id]) agrupados[it.id] = { id: it.id, nombre: it.nombre, precioBase: it.precioBase, cantidadTotal: 0, items: [] };
+                agrupados[it.id].cantidadTotal += it.cantidad; agrupados[it.id].items.push(it);
+            });
+
+            Object.values(agrupados).forEach(grupo => {
+                let pP = getPromoDinamica(grupo.id, grupo.cantidadTotal);
+                sB += grupo.precioBase * grupo.cantidadTotal;
+                
+                items.innerHTML += `<div class="fac-row" style="font-weight:bold; margin-bottom: 4px; font-size:14px; margin-top: 10px;"><span>${grupo.cantidadTotal}x ${grupo.nombre}</span> <span>Lps. ${Math.round(pP * grupo.cantidadTotal)}</span></div>`;
+                grupo.items.forEach(it => {
+                    items.innerHTML += `<div style="font-size:12px; color:#555; margin-bottom: 2px;">• ${it.cantidad}x ${it.variante} (Lps. ${Math.round(pP * it.cantidad)})</div>`;
+                });
+            });
+
+            document.getElementById('f-sub').innerText = `Lps. ${Math.round(sB)}`;
+            document.getElementById('f-aho').innerText = document.getElementById('txt-aho').innerText;
+            document.getElementById('f-env').innerText = document.getElementById('txt-env').innerText;
+            document.getElementById('f-com').innerText = document.getElementById('txt-com').innerText;
+            document.getElementById('f-tot').innerText = document.getElementById('txt-tot').innerText;
+            document.getElementById('f-row-com').style.display = document.getElementById('tipoEnvio').value === 'contra_entrega' ? 'flex' : 'none';
+        }
+
+        function generarImagenFactura() {
+            if(carrito.length===0) return alert("Agrega artículos al carrito");
+            armarFac();
+            html2canvas(document.getElementById('contenedor-factura'), {scale: 2}).then(c => {
+                const link = document.createElement('a'); link.download = `Factura_SDC_${Date.now()}.png`; link.href = c.toDataURL('image/png'); link.click();
+            });
+        }
+
+        function guardarCotizacion() {
+            if(carrito.length===0) return alert("Agrega artículos primero");
+            let d = {
+                cli: document.getElementById('c-nombre').value || 'Sin Nombre', tel: document.getElementById('c-tel').value || 'N/A',
+                dep: document.getElementById('c-depto').value, mun: document.getElementById('c-muni').value,
+                dir: document.getElementById('c-dir').value, paq: document.getElementById('c-paquetera').value
+            };
+            cotizaciones.push({ id: Date.now(), datos: d, items: [...carrito], total: totalCarritoActual, envio: document.getElementById('tipoEnvio').value });
+            guardarDatosLocales();
+            limpiarCarrito(); renderCotizaciones(); mostrarToast("Cotización guardada exitosamente"); cambiarVista('cotizaciones', document.querySelectorAll('nav button')[3]);
+        }
+
+        function renderCotizaciones() {
+            const cont = document.getElementById('lista-cotizaciones'); cont.innerHTML = '';
+            cotizaciones.forEach(c => {
+                cont.innerHTML += `<div class="item-lista"><div style="display:flex; justify-content:space-between;"><b>${c.datos.cli}</b><span style="color:var(--accent); font-weight: bold;">Lps. ${Math.round(c.total)}</span></div><p style="font-size:12px; color:var(--text-muted); margin:8px 0;">📍 ${c.datos.mun}, ${c.datos.dep} | 📦 ${c.datos.paq}</p><button class="btn-block" style="background:var(--panel-hover); border:1px solid var(--border); padding:12px; font-size:13px;" onclick="cargarCot(${c.id})">Recuperar al Carrito</button></div>`;
+            });
+        }
+
+        function cargarCot(id) {
+            let c = cotizaciones.find(x => x.id === id); carrito = [...c.items];
+            document.getElementById('c-nombre').value = c.datos.cli; document.getElementById('c-tel').value = c.datos.tel;
+            document.getElementById('c-depto').value = c.datos.dep; cargarMunicipios(); document.getElementById('c-muni').value = c.datos.mun;
+            document.getElementById('c-dir').value = c.datos.dir; document.getElementById('c-paquetera').value = c.datos.paq;
+            document.getElementById('tipoEnvio').value = c.envio;
+            document.getElementById('cart-badge').innerText = carrito.reduce((s,i)=>s+i.cantidad,0); calcularTotalesCarrito();
+            cotizaciones = cotizaciones.filter(x => x.id !== id); 
+            guardarDatosLocales(); renderCotizaciones(); cambiarVista('carrito', document.querySelectorAll('nav button')[2]);
+        }
+
+        function procesarVenta() {
+            if(carrito.length===0) return alert("Tu carrito está vacío");
+            carrito.forEach(iC => {
+                let pBD = baseDeDatos.find(p => p.id === iC.id);
+                let vBD = pBD.variantes.find(v => v.nombre === iC.variante);
+                if(vBD) vBD.stock -= iC.cantidad;
+            });
+            ventasTotales += totalCarritoActual; 
+            guardarDatosLocales();
+            document.getElementById('dash-ventas').innerText = `Lps. ${Math.round(ventasTotales)}`;
+            limpiarCarrito(); inicializarCatalogo(); mostrarToast("Venta Cerrada. Stock actualizado.");
+        }
+
+        function limpiarCarrito() {
+            carrito = []; document.getElementById('cart-badge').innerText = 0;
+            ['c-nombre', 'c-tel', 'c-dir'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('c-depto').value = "Comayagua"; cargarMunicipios(); document.getElementById('c-muni').value = "Comayagua";
+            calcularTotalesCarrito();
+        }
+
+        function cambiarVista(idVista, btn) {
+            document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa')); document.getElementById('vista-' + idVista).classList.add('activa');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('activo')); btn.classList.add('activo');
+        }
+
+        initLugares(); inicializarCatalogo();
+    </script>
+</body>
+</html>
