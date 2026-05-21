@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SDC ERP | Profe Coello</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SDC ERP | App</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0f19">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1090/1090806.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -15,10 +22,9 @@
             --border: #1e293b; --radius: 12px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; }
 
-        /* ENCABEZADO Y NAVEGACIÓN PREMIUM */
         header { padding: 20px 20px 10px; background: var(--bg-dark); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .logo-text { font-weight: 800; font-size: 22px; letter-spacing: -0.5px; color: white; }
         .logo-text span { color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
@@ -27,7 +33,6 @@
         nav { background-color: var(--bg-dark); padding: 5px 20px 15px; display: flex; overflow-x: auto; gap: 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; scroll-behavior: smooth; }
         nav::-webkit-scrollbar { display: none; }
         nav button { background: transparent; border: none; color: var(--text-muted); padding: 8px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 600; font-size: 14px; transition: all 0.3s ease; flex-shrink: 0; }
-        nav button:hover { color: var(--text-main); }
         nav button.activo { background-color: var(--accent); color: white; box-shadow: 0 4px 15px var(--accent-glow); }
 
         main { padding: 20px; flex-grow: 1; overflow-y: auto; padding-bottom: 30px; }
@@ -304,6 +309,16 @@
         <div class="fac-row" id="f-row-com" style="color:#555;"><span>Comisión de Servicio (CCE):</span> <span id="f-com">Lps. 0</span></div>
         <div class="fac-row fac-total"><span>TOTAL A PAGAR:</span> <span id="f-tot">Lps. 0</span></div>
     </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('App lista para instalar'))
+                    .catch(err => console.log('App en modo web'));
+            });
+        }
+    </script>
 
     <script>
         const ahora = new Date();
