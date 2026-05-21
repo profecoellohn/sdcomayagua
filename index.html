@@ -434,7 +434,7 @@
         }
 
         function guardarDatosLocales() {
-            localStorage.setItem('sdc_bd', JSON.stringify(baseDeDatos));
+            localStorage.setItem('sdc_bd', JSON.stringify(baseDeDatos)); 
             localStorage.setItem('sdc_ventas', ventasTotales);
             localStorage.setItem('sdc_cots', JSON.stringify(cotizaciones));
         }
@@ -658,24 +658,42 @@
             document.getElementById('modal-nuevo-producto').classList.add('activo');
         }
 
+        // --- ¡LA MAGIA DE LA COMPRESIÓN AQUÍ! ---
         function actualizarFotoNp(input, idx) {
             if (input.files && input.files[0]) {
                 let reader = new FileReader();
                 reader.onload = function (e) {
-                    if(idx === 'main') {
-                        npImgTemp = e.target.result;
-                        document.getElementById('np-img-preview').src = npImgTemp;
-                        document.getElementById('np-img-preview').style.display = 'block';
-                    } else {
-                        npVarTemp[idx].img = e.target.result;
-                    }
-                    mostrarToast("Foto cargada a la memoria.");
+                    let img = new Image();
+                    img.onload = function() {
+                        let canvas = document.createElement('canvas');
+                        let ctx = canvas.getContext('2d');
+                        let maxW = 800, maxH = 800; // Resolución amigable que no pesa
+                        let w = img.width, h = img.height;
+                        
+                        if(w > h) { if(w > maxW) { h *= maxW / w; w = maxW; } }
+                        else { if(h > maxH) { w *= maxH / h; h = maxH; } }
+                        
+                        canvas.width = w; canvas.height = h;
+                        ctx.drawImage(img, 0, 0, w, h);
+                        
+                        // 0.7 = Comprime la foto al 70% para que pase súper rápido a Firebase
+                        let base64Comprimido = canvas.toDataURL('image/jpeg', 0.7);
+
+                        if(idx === 'main') {
+                            npImgTemp = base64Comprimido;
+                            document.getElementById('np-img-preview').src = npImgTemp;
+                            document.getElementById('np-img-preview').style.display = 'block';
+                        } else {
+                            npVarTemp[idx].img = base64Comprimido;
+                        }
+                        mostrarToast("Foto optimizada y cargada.");
+                    };
+                    img.src = e.target.result;
                 }
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        // DIBUJAR VARIANTES NUEVO PRODUCTO CON BOTONES SEPARADOS
         function renderNpVar() {
             const list = document.getElementById('np-variantes-lista'); list.innerHTML = '';
             npVarTemp.forEach((v, i) => {
@@ -740,7 +758,7 @@
                 document.getElementById("modal-nuevo-producto").classList.remove('activo');
                 mostrarToast("¡Producto Creado Exitosamente!");
             } catch(e) {
-                console.error(e); alert("Error de conexión. Revisa tu internet.");
+                console.error(e); alert("Hubo un error actualizando la nube (Archivo muy grande o sin internet).");
             }
             btn.innerText = "Guardar en Nube"; btn.disabled = false;
         }
@@ -752,9 +770,27 @@
             if (input.files && input.files[0]) {
                 let reader = new FileReader();
                 reader.onload = function (e) {
-                    if(idx === 'main') productoActivoModal.img = e.target.result;
-                    else edVarTemp[idx].img = e.target.result;
-                    mostrarToast("Foto temporal cargada a la memoria.");
+                    let img = new Image();
+                    img.onload = function() {
+                        let canvas = document.createElement('canvas');
+                        let ctx = canvas.getContext('2d');
+                        let maxW = 800, maxH = 800;
+                        let w = img.width, h = img.height;
+                        
+                        if(w > h) { if(w > maxW) { h *= maxW / w; w = maxW; } }
+                        else { if(h > maxH) { w *= maxH / h; h = maxH; } }
+                        
+                        canvas.width = w; canvas.height = h;
+                        ctx.drawImage(img, 0, 0, w, h);
+                        
+                        let base64Comprimido = canvas.toDataURL('image/jpeg', 0.7);
+
+                        if(idx === 'main') productoActivoModal.img = base64Comprimido;
+                        else edVarTemp[idx].img = base64Comprimido;
+                        
+                        mostrarToast("Foto optimizada y cargada.");
+                    };
+                    img.src = e.target.result;
                 }
                 reader.readAsDataURL(input.files[0]);
             }
@@ -772,7 +808,6 @@
             document.getElementById('modal-editar').classList.add('activo');
         }
 
-        // DIBUJAR VARIANTES EDICIÓN CON BOTONES SEPARADOS
         function renderEditorV() {
             const list = document.getElementById('edit-variantes-lista'); list.innerHTML = '';
             edVarTemp.forEach((v, i) => {
@@ -844,29 +879,23 @@
             setTimeout(() => t.classList.remove('mostrar'), 3000);
         }
 
-        // --- SISTEMA DE VENTAS INTELIGENTE CONECTADO A FIREBASE ---
         async function procesarVenta() {
             if(carrito.length === 0) return alert("Tu carrito está vacío");
 
             const btn = document.getElementById("btn-procesar-venta");
-            if(btn) { btn.innerText = "Procesando Venta..."; btn.disabled = true; }
+            if(btn) { btn.innerText = "Procesando..."; btn.disabled = true; }
 
             try {
-                // 1. Preparamos el recibo de la orden
                 let datosOrden = {
                     cliente: document.getElementById('c-nombre').value || 'Consumidor Final',
                     telefono: document.getElementById('c-tel').value || 'No especificado',
                     destino: `${document.getElementById('c-muni').value || ''}, ${document.getElementById('c-depto').value || ''}`,
                     paqueteria: document.getElementById('c-paquetera').value,
-                    articulos: carrito,
-                    total: totalCarritoActual,
-                    fecha: new Date().toISOString()
+                    articulos: carrito, total: totalCarritoActual, fecha: new Date().toISOString()
                 };
 
-                // 2. Guardamos el recibo en la carpeta "ventas" de Firebase
                 await window.registrarVentaFirebase(datosOrden);
 
-                // 3. Modificamos el stock y guardamos qué productos tocamos
                 let idsProductosAfectados = new Set();
                 carrito.forEach(itemCarrito => {
                     let productoBD = baseDeDatos.find(p => p.id === itemCarrito.id);
@@ -879,26 +908,19 @@
                     }
                 });
 
-                // 4. Subimos el nuevo stock de cada producto tocado a Firebase
                 for(let id of idsProductosAfectados) {
                     let productoActualizado = baseDeDatos.find(p => p.id === id);
                     await window.actualizarFirebase(id, { variantes: productoActualizado.variantes });
                 }
 
-                // 5. Finalizamos
                 ventasTotales += totalCarritoActual; 
-                guardarDatosLocales();
-                document.getElementById('dash-ventas').innerText = `Lps. ${Math.round(ventasTotales)}`;
+                guardarDatosLocales(); document.getElementById('dash-ventas').innerText = `Lps. ${Math.round(ventasTotales)}`;
                 
-                limpiarCarrito(); 
-                inicializarCatalogo();
-                mostrarToast("¡Venta Exitosa! Inventario actualizado en la Nube.");
-
+                limpiarCarrito(); inicializarCatalogo();
+                mostrarToast("¡Venta Exitosa! Nube Actualizada.");
             } catch (error) {
-                console.error("Error al vender:", error);
-                alert("Hubo un error al procesar la venta. Revisa tu internet.");
+                console.error("Error al vender:", error); alert("Error al procesar la venta.");
             }
-
             if(btn) { btn.innerText = "Vender"; btn.disabled = false; }
         }
 
