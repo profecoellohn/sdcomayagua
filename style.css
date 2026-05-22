@@ -1,92 +1,257 @@
-:root {
-    --bg-dark: #0b0f19; --panel-bg: #151e2e; --panel-hover: #1e293b;
-    --text-main: #f8fafc; --text-muted: #94a3b8;
-    --accent: #3b82f6; --accent-glow: rgba(59, 130, 246, 0.4);
-    --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-    --border: #1e293b; --radius: 16px;
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SDC Master | ERP Cloud</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    <header>
+        <div class="logo-text">SDC <span>Master</span></div>
+        <div class="time-badge">
+            <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; box-shadow: 0 0 8px var(--success);"></span>
+            <span id="fecha-hora-header"></span>
+        </div>
+    </header>
 
-/* ESTRUCTURA Y FOOTER FIJO */
-body { background-color: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
-header { padding: 20px 20px 10px; background: var(--bg-dark); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.logo-text { font-weight: 900; font-size: 24px; color: white; text-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-.logo-text span { color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
-.time-badge { font-size: 12px; color: var(--text-muted); background: var(--panel-bg); padding: 6px 12px; border-radius: 20px; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); }
+    <nav>
+        <button class="activo" onclick="cambiarVista('inicio', this)">Inicio</button>
+        <button onclick="cambiarVista('catalogo', this)">Catálogo</button>
+        <button onclick="cambiarVista('carrito', this)">Carrito (<span id="cart-badge">0</span>)</button>
+        <button onclick="cambiarVista('ventas', this)">Ventas</button>
+        <button onclick="cambiarVista('cotizaciones', this)">Órdenes</button>
+        <button onclick="cambiarVista('dashboard', this)">Finanzas</button>
+    </nav>
 
-nav { background-color: var(--bg-dark); padding: 10px 20px; display: flex; overflow-x: auto; gap: 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-nav::-webkit-scrollbar { display: none; }
-nav button { background: var(--panel-bg); border: 1px solid transparent; color: var(--text-muted); padding: 10px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 600; font-size: 13px; transition: 0.3s; }
-nav button.activo { background-color: var(--accent); color: white; box-shadow: 0 4px 15px var(--accent-glow); }
+    <main>
+        <!-- VISTA INICIO -->
+        <section id="vista-inicio" class="vista activa">
+            <div class="item-lista" style="border-color: var(--accent); background: linear-gradient(145deg, #1e3a8a, #0b0f19); padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <h1 style="font-size: 24px; margin-bottom: 5px; color: white;">¡Hola, Profe Coello! 👋</h1>
+                <p style="color: var(--text-muted); font-size: 13px;" id="saludo-fecha"></p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px;">
+                    <button class="btn-block btn-add" style="margin-bottom: 0;" onclick="cambiarVista('catalogo', document.querySelectorAll('nav button')[1])">Nueva Venta</button>
+                    <button class="btn-block" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); margin-bottom: 0;" onclick="cambiarVista('ventas', document.querySelectorAll('nav button')[3])">Historial</button>
+                </div>
+            </div>
+            
+            <h2 style="font-size: 13px; color: var(--text-muted); margin-top: 25px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Estado del Inventario</h2>
+            <div class="dash-grid" style="margin-top: 0;">
+                <div class="dash-card"><div class="icon-db" style="color:var(--accent)">📦</div><h3>Artículos</h3><p id="op-tot">0</p></div>
+                <div class="dash-card warning"><div class="icon-db" style="color:var(--warning)">⚠️</div><h3>Bajo Stock</h3><p id="op-baj">0</p></div>
+                <div class="dash-card danger"><div class="icon-db" style="color:var(--danger)">🖼️</div><h3>Faltan Fotos</h3><p id="op-fot">0</p></div>
+                <div class="dash-card success"><div class="icon-db" style="color:var(--success)">💰</div><h3>Valor Neto</h3><p id="op-inv">Lps. 0</p></div>
+            </div>
+        </section>
 
-main { padding: 20px; flex-grow: 1; overflow-y: auto; }
-footer { text-align: center; padding: 15px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); background: var(--bg-dark); flex-shrink: 0; }
+        <!-- VISTA CATÁLOGO -->
+        <section id="vista-catalogo" class="vista">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="buscador" class="input-box" style="margin-bottom: 0;" placeholder="Buscar producto..." onkeyup="buscarProducto()">
+                <button class="btn-add" style="border:none; border-radius: 12px; padding: 0 15px; font-weight:bold; color:white; cursor:pointer; white-space:nowrap;" onclick="abrirModalNuevo()">+ Nuevo</button>
+            </div>
+            <div class="filtros-cat" id="contenedor-filtros"></div>
+            <div class="grid-catalogo" id="contenedor-productos"></div>
+        </section>
 
-.vista { display: none; animation: fadeIn 0.2s ease; }
-.vista.activa { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        <!-- VISTA CARRITO -->
+        <section id="vista-carrito" class="vista">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: var(--accent);">Logística de Envío</h2>
+            <input type="text" id="c-nombre" class="input-box" placeholder="Nombre del Cliente">
+            <input type="tel" id="c-tel" class="input-box" placeholder="Teléfono del Cliente">
+            <div class="grid-2-col">
+                <select id="c-depto" class="input-box" onchange="cargarMunicipios()"></select>
+                <select id="c-muni" class="input-box"><option value="">Seleccione Municipio</option></select>
+            </div>
+            <textarea id="c-dir" class="input-box" placeholder="Dirección Exacta..." rows="2"></textarea>
 
-/* TARJETAS MODERNAS */
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-.dash-card { background: rgba(21, 30, 46, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); padding: 20px 15px; border-radius: var(--radius); text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-.dash-card h3 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
-.dash-card p { font-size: 22px; font-weight: 900; color: white; }
-.card-full { grid-column: span 2; }
-.icon-db { font-size: 24px; margin-bottom: 8px; }
+            <div class="grid-2-col">
+                <select id="c-paquetera" class="input-box">
+                    <option value="Local">Entrega Local</option>
+                    <option value="Forza">Forza Delivery</option>
+                    <option value="C807">C807</option>
+                    <option value="Cargo Expreso">Cargo Expreso</option>
+                </select>
+                <select id="tipoEnvio" class="input-box" onchange="calcularTotalesCarrito()">
+                    <option value="local">Recogida Local (Lps. 0)</option>
+                    <option value="normal">Envío Normal (+ Lps. 110)</option>
+                    <option value="contra_entrega">Pagar al recibir (CCE) (+ Lps. 110 + 6%)</option>
+                </select>
+            </div>
 
-.input-box, select, textarea { width: 100%; padding: 14px; margin-bottom: 15px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: white; border-radius: 12px; font-size: 14px; outline: none; transition: 0.3s; }
-.input-box:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--bg-dark); }
-.grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            <h2 style="font-size: 16px; margin: 25px 0 15px;">Detalle de la Orden</h2>
+            <div id="lista-carrito"></div>
 
-.filtros-cat { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px; }
-.filtros-cat::-webkit-scrollbar { display: none; }
-.btn-cat { background: var(--panel-bg); border: 1px solid var(--border); color: var(--text-main); padding: 8px 16px; border-radius: 10px; font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; font-weight: 500; }
-.btn-cat.activo { border-color: var(--accent); color: var(--accent); background: rgba(59, 130, 246, 0.1); font-weight: 700; }
+            <div style="background: rgba(21, 30, 46, 0.8); padding: 20px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--accent);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;"><span>Ahorro Promociones:</span><span id="txt-aho" style="color:var(--success); font-weight: bold;">- Lps. 0</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;"><span>Costo Envío:</span><span id="txt-env">Lps. 0</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: var(--warning);" id="div-com"><span>Comisión (CCE):</span><span id="txt-com">Lps. 0</span></div>
+                <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 24px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 15px; margin-top: 15px; color: white;"><span>TOTAL:</span><span id="txt-tot">Lps. 0</span></div>
+            </div>
 
-/* CATÁLOGO E IMÁGENES COMPLETAS */
-.grid-catalogo { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-.card-prod { background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; cursor: pointer; position: relative; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-.card-prod:active { transform: scale(0.98); }
-.card-prod img { width: 100%; height: 160px; object-fit: contain; border-radius: 10px; margin-bottom: 12px; background: rgba(0,0,0,0.4); }
-.tag-stock { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.85); padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
+            <div class="grid-2-col" style="margin-bottom: 12px;">
+                <button class="btn-block" style="background: #10b981; margin:0;" onclick="enviarWhatsApp()">WhatsApp</button>
+                <button class="btn-block" style="background: var(--warning); color: #000; margin:0;" onclick="generarImagenFactura()">Previa Foto</button>
+            </div>
+            <div class="grid-2-col">
+                <button class="btn-block" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border); margin:0;" onclick="guardarCotizacion()">Solo Cotizar</button>
+                <button class="btn-block btn-add" id="btn-procesar-venta" style="margin:0;" onclick="procesarVenta()">¡VENDER!</button>
+            </div>
+        </section>
 
-/* MODALES */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s; }
-.modal-overlay.activo { opacity: 1; pointer-events: auto; }
-.modal-content { background: var(--panel-bg); width: 100%; max-width: 500px; border-radius: 28px 28px 0 0; padding: 25px; transform: translateY(100%); transition: 0.3s; max-height: 90vh; overflow-y: auto; }
-.modal-overlay.activo .modal-content { transform: translateY(0); }
+        <!-- VISTA VENTAS Y COTIZACIONES -->
+        <section id="vista-ventas" class="vista">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: var(--success);">Ventas Completadas</h2>
+            <div id="lista-ventas-historial"></div>
+        </section>
 
-.m-img-preview { width: 100%; height: 260px; object-fit: contain; border-radius: 16px; margin-bottom: 20px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); }
+        <section id="vista-cotizaciones" class="vista">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: var(--accent);">Cotizaciones Pendientes</h2>
+            <div id="lista-cotizaciones"></div>
+        </section>
 
-/* BOTONES */
-.btn-variante { background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text-main); padding: 12px 18px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; margin: 4px; }
-.btn-variante.seleccionado { border-color: var(--accent); background: rgba(59, 130, 246, 0.15); color: var(--accent); }
-.btn-variante.sin-stock { opacity: 0.4; text-decoration: line-through; pointer-events: none; }
+        <!-- VISTA DASHBOARD -->
+        <section id="vista-dashboard" class="vista">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: var(--warning);">Datos Financieros</h2>
+            <div class="dash-grid">
+                <div class="dash-card card-full" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2);"><h3>Ventas Concretadas</h3><p id="dash-ventas" style="color: var(--success); font-size: 32px;">Lps. 0</p></div>
+                <div class="dash-card"><h3>Inversión Total</h3><p id="dash-inv">Lps. 0</p></div>
+                <div class="dash-card"><h3>Proyección Venta</h3><p id="dash-proy">Lps. 0</p></div>
+                <div class="dash-card card-full"><h3>Ganancia Neta Esperada</h3><p id="dash-gan" style="color: white; font-size: 28px;">Lps. 0</p></div>
+            </div>
+            <button class="btn-block" style="margin-top: 30px; background: transparent; border: 1px solid var(--danger); color: var(--danger);" onclick="resetearSistema()">Restablecer Sistema Local</button>
+        </section>
+    </main>
 
-.btn-promo-click { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 4px; }
-.btn-promo-click:active { transform: scale(0.95); background: rgba(59, 130, 246, 0.2); border-color: var(--accent); }
-.btn-promo-click span { font-size: 15px; font-weight: 800; color: var(--accent); }
+    <footer>SDC ERP • Soluciones Digitales Comayagua | El Profe Coello</footer>
 
-.control-cantidad { display: flex; align-items: center; justify-content: center; gap: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 16px; margin: 25px 0; border: 1px solid var(--border); }
-.btn-circulo { width: 45px; height: 45px; border-radius: 12px; border: none; background: var(--panel-hover); color: white; font-size: 24px; cursor: pointer; }
-.input-cant { width: 60px; text-align: center; background: transparent; border: none; color: white; font-size: 22px; font-weight: 800; }
+    <!-- MODAL VISTA PRODUCTO -->
+    <div class="modal-overlay" id="modal-producto">
+        <div class="modal-content">
+            <img id="m-img" class="m-img-preview" src="">
+            <p id="m-categoria" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;"></p>
+            <h2 id="m-nombre" style="font-size: 24px; margin: 5px 0; color: white; font-weight: 900;"></h2>
+            <p id="m-precio" class="precio-card" style="font-size: 22px;"></p>
+            
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 15px; font-weight: 600;">Descuentos por volumen (Toca para aplicar):</p>
+            <div id="m-promos-text" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;"></div>
+            
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 20px; font-weight: 600;">Colores y Variantes disponibles:</p>
+            <div class="variantes-container" id="m-variantes"></div>
+            
+            <p style="font-size: 13px; font-weight: bold; text-align: center; color: var(--accent); margin-top:10px;" id="m-stock-texto">Stock: -</p>
+            
+            <div class="control-cantidad">
+                <button class="btn-circulo" onclick="modCantidadModal(-1)">-</button>
+                <input type="number" id="m-cantidad" class="input-cant" value="1" onchange="verificarCantidadManual()">
+                <button class="btn-circulo" onclick="modCantidadModal(1)">+</button>
+            </div>
 
-.btn-block { width: 100%; padding: 16px; border: none; border-radius: 14px; font-weight: 700; font-size: 15px; cursor: pointer; color: white; margin-bottom: 12px; }
-.btn-add { background: linear-gradient(135deg, var(--accent), #2563eb); box-shadow: 0 4px 15px var(--accent-glow); }
-.btn-cerrar { background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); }
-.btn-foto-peq { background: var(--panel-hover); border: 1px solid var(--border); color: var(--text-main); font-size: 13px; padding: 12px; border-radius: 10px; cursor: pointer; width: 100%; display: block; text-align: center; font-weight: 600; margin-bottom: 0; }
-input[type="file"] { display: none; }
+            <button class="btn-block btn-add" onclick="agregarDesdeModal()" style="padding: 18px;">Añadir al Carrito</button>
+            <div class="grid-2-col" style="margin-top: 10px;">
+                <button class="btn-block btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+                <button class="btn-block" style="background: var(--success); color: white;" onclick="irAlCarrito()">Ir al Carrito</button>
+            </div>
+            <button class="btn-block btn-editar-ico" onclick="abrirModalEdicion()">Modificar Producto</button>
+        </div>
+    </div>
 
-.item-lista { background: rgba(21, 30, 46, 0.5); padding: 18px; border-radius: var(--radius); margin-bottom: 12px; border: 1px solid var(--border); }
-.edicion-fila { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; }
+    <!-- MODAL NUEVO PRODUCTO -->
+    <div class="modal-overlay" id="modal-nuevo-producto">
+        <div class="modal-content">
+            <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--accent);">📦 Nuevo Producto</h2>
+            <div class="grid-2-col" style="margin-bottom: 15px;">
+                <label class="btn-foto-peq" style="background: rgba(59,130,246,0.1); border-color: var(--accent); color: var(--accent);">📁 Galería<input type="file" accept="image/*" onchange="actualizarFotoNp(this, 'main')"></label>
+                <label class="btn-foto-peq" style="background: rgba(59,130,246,0.1); border-color: var(--accent); color: var(--accent);">📷 Cámara<input type="file" accept="image/*" capture="environment" onchange="actualizarFotoNp(this, 'main')"></label>
+            </div>
+            <img id="np-img-preview" style="display:none; width:100%; height:200px; object-fit:contain; border-radius:12px; margin-bottom:15px; background:rgba(0,0,0,0.5); border:1px solid var(--border);">
+            
+            <div class="grid-2-col">
+                <div><label style="font-size: 12px; color: var(--text-muted);">Nombre</label><input type="text" id="np-nombre" class="input-box"></div>
+                <div><label style="font-size: 12px; color: var(--text-muted);">Categoría</label><input type="text" id="np-categoria" class="input-box"></div>
+                <div><label style="font-size: 12px; color: var(--text-muted);">Costo Real</label><input type="number" id="np-costo" class="input-box"></div>
+                <div><label style="font-size: 12px; color: var(--text-muted);">Precio Venta</label><input type="number" id="np-precio" class="input-box"></div>
+            </div>
 
-.toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 14px 28px; border-radius: 30px; font-size: 14px; font-weight: bold; transition: 0.4s; z-index: 2000; }
-.toast.mostrar { bottom: 30px; }
+            <h3 style="font-size: 14px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Colores y Stock</h3>
+            <div id="np-variantes-lista"></div>
+            <button class="btn-block" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--text-muted);" onclick="agregarFilaNpVar()">+ Añadir Color</button>
 
-/* FACTURA TICKET */
-#contenedor-factura { position: absolute; left: -9999px; top: 0; background: #ffffff; color: #111; width: 400px; padding: 30px; font-family: 'Courier New', Courier, monospace; border: 1px solid #ddd; }
-.fac-header { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 15px; margin-bottom: 15px; }
-.fac-info-box { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border: 1px solid #e2e8f0; font-family: 'Inter', sans-serif;}
-.fac-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold;}
-.fac-total { font-weight: 900; font-size: 22px; border-top: 2px dashed #333; padding-top: 15px; margin-top: 10px; font-family: 'Inter', sans-serif; }
+            <h3 style="font-size: 14px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Descuentos</h3>
+            <div id="np-promos-lista"></div>
+            <button class="btn-block" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--text-muted);" onclick="agregarFilaNpPro()">+ Añadir Descuento</button>
+
+            <div class="grid-2-col" style="margin-top: 25px;">
+                <button class="btn-block btn-cerrar" onclick="document.getElementById('modal-nuevo-producto').classList.remove('activo')">Cancelar</button>
+                <button class="btn-block btn-add" id="btn-guardar-firebase" onclick="guardarNuevoProductoLocal()">Guardar Nube</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDICIÓN -->
+    <div class="modal-overlay" id="modal-editar">
+        <div class="modal-content">
+            <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--warning);">✏️ Modo Edición</h2>
+            <div class="grid-2-col" style="margin-bottom: 15px;">
+                <label class="btn-foto-peq" style="background: rgba(245,158,11,0.1); border-color: var(--warning); color: var(--warning);">📁 Galería<input type="file" accept="image/*" onchange="actualizarFoto(this, 'main')"></label>
+                <label class="btn-foto-peq" style="background: rgba(245,158,11,0.1); border-color: var(--warning); color: var(--warning);">📷 Cámara<input type="file" accept="image/*" capture="environment" onchange="actualizarFoto(this, 'main')"></label>
+            </div>
+            <input type="text" id="edit-nom" class="input-box" placeholder="Nombre">
+            <div class="grid-2-col">
+                <input type="number" id="edit-cos" class="input-box" placeholder="Costo">
+                <input type="number" id="edit-pre" class="input-box" placeholder="Precio">
+            </div>
+
+            <h3 style="font-size: 14px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Colores</h3>
+            <div id="edit-variantes-lista"></div>
+            <button class="btn-block" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--text-muted);" onclick="agregarFilaVariante()">+ Añadir Color</button>
+
+            <h3 style="font-size: 14px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Descuentos</h3>
+            <div id="edit-promos-lista"></div>
+            <button class="btn-block" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--text-muted);" onclick="agregarFilaPromo()">+ Añadir Descuento</button>
+
+            <div class="grid-2-col" style="margin-top: 25px;">
+                <button class="btn-block btn-cerrar" onclick="document.getElementById('modal-editar').classList.remove('activo')">Cancelar</button>
+                <button class="btn-block btn-add" id="btn-guardar-edicion" onclick="guardarEdicion()">Actualizar Nube</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast-msg">Mensaje</div>
+
+    <!-- TICKET DE FACTURA OCULTO -->
+    <div id="contenedor-factura">
+        <div class="fac-header">
+            <h1>SDC COMAYAGUA</h1>
+            <p id="f-fecha" style="font-size: 12px; color: #555;"></p>
+            <p id="f-codigo" style="font-size: 15px; font-weight: 900; margin-top: 8px;"></p>
+        </div>
+        <div class="fac-info-box">
+            <p><b>Cliente:</b> <span id="f-cli"></span></p>
+            <p><b>Teléfono:</b> <span id="f-tel"></span></p>
+            <p><b>Destino:</b> <span id="f-zona"></span></p>
+            <p><b>Dirección:</b> <span id="f-dir"></span></p>
+            <p><b>Paquetera:</b> <span id="f-paq"></span></p>
+        </div>
+        <div style="border-bottom: 2px dashed #000; margin-bottom: 15px; padding-bottom: 5px; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between;">
+            <span>CANT | DESCRIPCIÓN</span> <span>TOTAL</span>
+        </div>
+        <div id="f-items"></div>
+        <div class="fac-row" style="margin-top: 25px; color:#333;"><span>Subtotal Base:</span> <span id="f-sub">Lps. 0</span></div>
+        <div class="fac-row" style="color:#059669;"><span>Ahorro Promociones:</span> <span id="f-aho">- Lps. 0</span></div>
+        <div class="fac-row" style="color:#333;"><span>Costo de Envío:</span> <span id="f-env">Lps. 0</span></div>
+        <div class="fac-row" id="f-row-com" style="color:#333;"><span>Comisión CCE:</span> <span id="f-com">Lps. 0</span></div>
+        <div class="fac-row fac-total"><span>TOTAL A PAGAR:</span> <span id="f-tot">Lps. 0</span></div>
+        <p style="text-align: center; margin-top: 30px; font-size: 12px; font-style: italic; color: #666;">¡Gracias por su compra!</p>
+    </div>
+
+    <!-- ENLACES A TUS NUEVOS ARCHIVOS JS -->
+    <script src="app.js"></script>
+    <script type="module" src="firebase.js"></script>
+</body>
+</html>
