@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Venta | SD COMAYAGUA</title>
+    <meta name="description" content="Panel SDC ERP para ventas, inventario y facturación de Soluciones Digitales Comayagua.">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="assets/images/favicon-32.png">
+    <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+    <meta name="theme-color" content="#0b0f19">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+
+    <script>
+        // Evita repetir pantalla de carga y login al cambiar entre páginas reales.
+        (function(){
+            function getStore(store, key) { try { return store.getItem(key); } catch(e) { return null; } }
+            function setStore(store, key, value) { try { store.setItem(key, value); } catch(e) {} }
+            var adminUrl = false;
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                adminUrl = params.get('sdc_admin') === '1' || params.get('admin') === '1' || params.get('auth') === '1';
+            } catch(e) {}
+            var splashVisto = getStore(sessionStorage, 'sdc_splash_seen') === '1' || getStore(localStorage, 'sdc_splash_seen') === '1' || adminUrl;
+            var adminOk = getStore(sessionStorage, 'sdc_admin_ok') === '1' || getStore(localStorage, 'sdc_admin_ok') === '1' || adminUrl;
+            if (splashVisto) {
+                setStore(sessionStorage, 'sdc_splash_seen', '1');
+                setStore(localStorage, 'sdc_splash_seen', '1');
+                document.documentElement.classList.add('sdc-splash-skip');
+            }
+            if (adminOk) {
+                setStore(sessionStorage, 'sdc_admin_ok', '1');
+                setStore(localStorage, 'sdc_admin_ok', '1');
+                window.SDC_ADMIN_OK = true;
+                document.documentElement.classList.add('sdc-admin-unlocked');
+            }
+        })();
+    </script>
+
+    <script>
+        // Activa una entrada suave cuando venimos de otra página del sistema.
+        (function(){
+            try {
+                if (sessionStorage.getItem('sdc_soft_nav') === '1') {
+                    document.documentElement.classList.add('sdc-soft-enter');
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/pages.css">
+
+    <script>
+        // Failsafe: si algo tarda mucho, quitar pantalla de carga para no quedar en "Preparando sistema".
+        window.SDC_FORCE_SPLASH_TIMEOUT = window.setTimeout(function(){
+            try {
+                sessionStorage.setItem('sdc_splash_seen', '1');
+                localStorage.setItem('sdc_splash_seen', '1');
+                document.documentElement.classList.add('sdc-splash-skip');
+                document.body && document.body.classList.add('sdc-no-splash');
+                var s = document.getElementById('splash-screen');
+                if (s) s.classList.add('oculto');
+            } catch(e) {}
+        }, 9000);
+    </script>
+
+
+    <script>
+        // V88: respaldo de acceso para que la pantalla de PIN nunca quede pegada.
+        (function(){
+            function unlockAdminLocal(){
+                try {
+                    sessionStorage.setItem('sdc_admin_ok', '1');
+                    localStorage.setItem('sdc_admin_ok', '1');
+                    sessionStorage.setItem('sdc_splash_seen', '1');
+                    localStorage.setItem('sdc_splash_seen', '1');
+                } catch(e) {}
+                try {
+                    window.SDC_ADMIN_OK = true;
+                    document.documentElement.classList.add('sdc-admin-unlocked', 'sdc-splash-skip');
+                    document.body.classList.remove('login-locked');
+                    document.body.classList.add('sdc-admin-ready', 'sdc-no-splash');
+                    var login = document.getElementById('login-screen');
+                    if (login) login.classList.add('oculto');
+                    var splash = document.getElementById('splash-screen');
+                    if (splash) {
+                        splash.classList.add('oculto');
+                        splash.setAttribute('hidden', 'hidden');
+                        splash.style.setProperty('display', 'none', 'important');
+                    }
+                } catch(e) {}
+            }
+
+            function setupPinFallback(){
+                var form = document.getElementById('login-form');
+                var input = document.getElementById('pin-admin');
+                var btn = form ? form.querySelector('button[type="submit"]') : null;
+                var err = document.getElementById('login-error');
+                if (!form || !input) return;
+
+                // Si ya venía autorizado, entrar directo.
+                try {
+                    if (sessionStorage.getItem('sdc_admin_ok') === '1' || localStorage.getItem('sdc_admin_ok') === '1') {
+                        unlockAdminLocal();
+                        return;
+                    }
+                } catch(e) {}
+
+                function tryLogin(ev){
+                    if (ev) {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    }
+                    var pin = (input.value || '').trim();
+                    var isLocalFile = location.protocol === 'file:';
+                    if (pin === '199311' || (isLocalFile && pin === '')) {
+                        unlockAdminLocal();
+                        return false;
+                    }
+                    if (err) err.textContent = 'PIN incorrecto. Usa el PIN de administrador.';
+                    input.focus();
+                    return false;
+                }
+
+                form.addEventListener('submit', tryLogin, true);
+                if (btn) btn.addEventListener('click', tryLogin, true);
+            }
+
+            document.addEventListener('DOMContentLoaded', setupPinFallback);
+            window.addEventListener('load', setupPinFallback);
+            setTimeout(setupPinFallback, 300);
+            setTimeout(setupPinFallback, 1200);
+        })();
+    </script>
+
+
+    <script>
+        // V95: sin PIN / sin ADMIN. Entrar directo al sistema.
+        (function(){
+            function entrarDirectoSDC(){
+                try {
+                    sessionStorage.setItem('sdc_admin_ok', '1');
+                    localStorage.setItem('sdc_admin_ok', '1');
+                    sessionStorage.setItem('sdc_splash_seen', '1');
+                    localStorage.setItem('sdc_splash_seen', '1');
+                } catch(e) {}
+                try {
+                    window.SDC_ADMIN_OK = true;
+                    document.documentElement.classList.add('sdc-admin-unlocked', 'sdc-splash-skip');
+                    if(document.body){
+                        document.body.classList.remove('login-locked');
+                        document.body.classList.add('sdc-admin-ready', 'sdc-no-splash');
+                    }
+                    var login = document.getElementById('login-screen');
+                    if(login){
+                        login.classList.add('oculto');
+                        login.setAttribute('hidden', 'hidden');
+                        login.style.setProperty('display', 'none', 'important');
+                    }
+                    var splash = document.getElementById('splash-screen');
+                    if(splash){
+                        splash.classList.add('oculto');
+                        splash.setAttribute('hidden', 'hidden');
+                        splash.style.setProperty('display', 'none', 'important');
+                    }
+                } catch(e) {}
+            }
+            entrarDirectoSDC();
+            document.addEventListener('DOMContentLoaded', entrarDirectoSDC);
+            window.addEventListener('load', entrarDirectoSDC);
+            setTimeout(entrarDirectoSDC, 100);
+            setTimeout(entrarDirectoSDC, 800);
+        })();
+    </script>
+
+</head>
+<body class="page-carrito sdc-no-splash sdc-admin-ready sdc-no-splash">
+    <script id="sdc-body-unlock-early">
+        if (document.documentElement.classList.contains('sdc-admin-unlocked')) {
+            document.body.classList.remove('login-locked');
+            document.body.classList.add('sdc-admin-ready');
+        }
+        if (document.documentElement.classList.contains('sdc-splash-skip')) {
+            document.body.classList.add('sdc-no-splash');
+        }
+    </script>
+    <div id="splash-screen" class="splash-screen oculto" hidden style="display:none!important;">
+        <div class="splash-card">
+            <div class="splash-logo-shell">
+                <img src="assets/images/logo-sdcomayagua.png" alt="Logo SDC Comayagua" class="splash-logo">
+            </div>
+            
+            <h1>SDC ERP</h1>
+            <p id="splash-status">Preparando sistema...</p>
+            
+            <div class="splash-loader"><span></span></div>
+        </div>
+    </div>
+
+    <div id="login-screen" class="login-screen oculto" hidden style="display:none!important;">
+        <form id="login-form" class="login-card" autocomplete="off">
+            <img src="assets/images/logo-sdcomayagua.png" alt="Logo SDC Comayagua" class="login-logo">
+            
+            <h1 class="brand-login-title"><span>SD</span> <b>COMAYAGUA</b></h1>
+            
+            
+            <label for="pin-admin" class="sr-only">PIN de administrador</label>
+            <input id="pin-admin" class="input-box pin-input" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="PIN de administrador" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" onclick="this.focus()" onfocus="this.select()">
+            <button type="submit" class="btn-block btn-add" onclick="return window.sdcLoginSubmitV92 ? window.sdcLoginSubmitV92(event) : true;">Entrar como ADMIN</button>
+            <p id="login-error" class="login-error" aria-live="polite"></p>
+            
+        </form>
+    </div>
+
+    <header>
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Colapsar menú" aria-label="Colapsar menú"></button>
+        <div class="brand-wrap"><img src="assets/images/logo-sdcomayagua-small.png" alt="Logo SDC" class="brand-logo"><div class="logo-text logo-brand-clean"><strong>SD</strong><span>COMAYAGUA</span></div></div>
+        <div class="header-actions">
+            <div class="header-status-row">
+                <div class="mode-chip" id="admin-chip">ADMIN</div>
+                <div class="mode-chip cloud-chip cloud-checking" id="cloud-status">Nube: verificando</div>
+                <div class="time-badge">
+                    <span style="display:inline-block; width:6px; height:6px; background:var(--success); border-radius:50%; box-shadow: 0 0 5px var(--success);"></span>
+                    <span id="fecha-hora-header"></span>
+                </div>
+            </div>
+            <div class="header-quick-actions">
+                <button class="btn-mini btn-ghost" id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">☀️ Claro</button>
+                <button class="btn-mini btn-ghost" onclick="cerrarSesionAdmin()">Salir</button>
+            </div>
+            <button class="btn-mini btn-ghost btn-version-switch" id="sidebar-version-btn" onclick="cambiarVersionSidebar()" title="Cambiar versión">CAMBIAR VERSIÓN</button>
+        </div>
+    </header>
+
+        <nav class="main-nav">
+        <a class="nav-link" aria-current="false" title="Inicio" data-short="Inicio" data-view="inicio" href="index.html"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg></span><span class="nav-label">Inicio</span></a>
+        <a class="nav-link" aria-current="false" title="Catálogo" data-short="Catálogo" data-view="catalogo" href="productos.html"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16"/><path d="M4 12h16"/><path d="M4 17.5h16"/><path d="M7 4.5v4"/><path d="M17 4.5v4"/><path d="M7 10v4"/><path d="M17 10v4"/><path d="M7 15.5v4"/><path d="M17 15.5v4"/></svg></span><span class="nav-label">Catálogo</span></a>
+        <a class="nav-link activo" aria-current="page" title="Venta" data-short="Venta" data-view="carrito" href="venta.html"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h2l2.1 9.3a2 2 0 0 0 2 1.6h6.7a2 2 0 0 0 1.9-1.4L20 9H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg></span><span class="nav-label">Venta</span><span class="nav-count-wrap">(<span id="cart-badge">0</span>)</span></a>
+        <a class="nav-link" aria-current="false" title="Cotizaciones" data-short="Órdenes" data-view="cotizaciones" href="cotizaciones.html"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l3 3V20.5H7z"/><path d="M14 3.5v4h4"/><path d="M9.5 11h5"/><path d="M9.5 15h5"/></svg></span><span class="nav-label">Cotizaciones</span></a>
+        <a class="nav-link" aria-current="false" title="Ventas" data-short="Ventas" data-view="ventas" href="ventas.html"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14v13H5z"/><path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7"/><path d="M8.5 12h7"/></svg></span><span class="nav-label">Ventas</span></a>
+        <a class="nav-link" aria-current="false" title="Finanzas" data-short="Finanzas" data-view="dashboard" href="finanzas.html"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11"/><path d="M12 20V5"/><path d="M19 20v-7"/><path d="M3.5 20h17"/></svg></span><span class="nav-label">Finanzas</span></a>
+    </nav>
+
+    <main>
+        <section id="vista-inicio" class="vista">
+            <div class="home-hero">
+                <div class="hero-copy">
+                    
+                    <h1>¡Hola, Profe Coello! <span>👋</span></h1>
+                    <p id="saludo-fecha" class="hero-date"></p>
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <small>Ventas hoy</small>
+                            <strong id="hero-ventas-hoy">Lps. 0</strong>
+                        </div>
+                        <div class="hero-stat">
+                            <small>Stock crítico</small>
+                            <strong id="hero-stock-critico">0</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-side">
+                    <img src="assets/images/logo-sdcomayagua-small.png" alt="SDC" class="hero-logo">
+                    <div class="hero-actions">
+                        <button class="btn-block btn-add" style="margin-bottom: 0;" onclick="iniciarVentaRapida()">Venta</button>
+                        <button class="btn-block hero-secondary" onclick="cambiarVista('cotizaciones', document.querySelectorAll('nav button')[3])">Órdenes</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-mini-title">
+                <span>Inventario</span>
+                
+            </div>
+            <div class="dash-grid home-kpi-grid" style="margin-top: 0;">
+                <div class="dash-card kpi-card" data-kpi="📦"><h3>Artículos</h3><p id="op-tot">0</p></div>
+                <div class="dash-card kpi-card" data-kpi="⚠️"><h3>Bajo stock</h3><p id="op-baj">0</p></div>
+                <div class="dash-card kpi-card" data-kpi="🖼️"><h3>Sin foto</h3><p id="op-fot">0</p></div>
+                <div class="dash-card kpi-card" data-kpi="💰"><h3>Valor</h3><p id="op-inv">Lps. 0</p></div>
+            </div>
+
+            <div class="home-command-grid">
+                <button class="command-card" onclick="iniciarVentaRapida()">
+                    <span>🛒</span>
+                    <b>Venta</b>
+                    <em>→</em>
+                </button>
+                <button class="command-card" onclick="cambiarVista('ventas', document.querySelectorAll('nav button')[4])">
+                    <span>🧾</span>
+                    <b>Historial</b>
+                    <em>→</em>
+                </button>
+                <button class="command-card" onclick="abrirModalNuevo()">
+                    <span>📦</span>
+                    <b>Nuevo producto</b>
+                    <em>→</em>
+                </button>
+                <button class="command-card" onclick="cambiarVista('dashboard', document.querySelectorAll('nav button')[5])">
+                    <span>📊</span>
+                    <b>Finanzas</b>
+                    <em>→</em>
+                </button>
+            </div>
+
+            <div class="insight-grid">
+                <div class="insight-card">
+                    <div>
+                        
+                        <h3 id="home-ventas-hoy">Lps. 0</h3>
+                        
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div>
+                        
+                        <h3 id="home-pendiente-sync">0</h3>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="smart-panel">
+                <div class="panel-title-row">
+                    <div>
+                        
+                        <h3>Crítico</h3>
+                    </div>
+                    <span id="home-stock-critico-count" class="status-pill status-warning">0</span>
+                </div>
+                <div id="home-stock-list" class="compact-list"></div>
+            </div>
+
+            <div class="smart-panel">
+                <div class="panel-title-row">
+                    <div>
+                        
+                        <h3>Destacados</h3>
+                    </div>
+                    
+                </div>
+                <div id="home-top-productos" class="compact-list"></div>
+            </div>
+        </section>
+
+        <section id="vista-catalogo" class="vista">
+            <div class="catalog-switcher" role="tablist" aria-label="Secciones del catálogo">
+                <button type="button" id="catalog-tab-productos" class="activo" onclick="setCatalogSection('productos', this)">Productos</button>
+                <button type="button" id="catalog-tab-nuevo" onclick="setCatalogSection('nuevo', this)">Nuevo</button>
+            </div>
+
+            <div id="catalog-panel-productos" class="catalog-subpanel activo">
+                <div class="catalog-search-toggle-row">
+                    <button type="button" id="catalog-search-toggle" class="catalog-search-toggle-btn" aria-expanded="false" aria-controls="catalog-search-row" onclick="toggleCatalogSearch()">
+                        <span class="search-toggle-icon" aria-hidden="true">🔍</span>
+                        <span class="search-toggle-label">Buscar</span>
+                    </button>
+                </div>
+                <div class="catalog-search-row is-collapsed" id="catalog-search-row" hidden>
+                    <div class="catalog-search-field">
+                        <input type="text" id="buscador" class="input-box" style="margin-bottom: 0;" placeholder="Buscar producto..." onkeyup="buscarProducto()" autocomplete="off">
+                        <button type="button" class="catalog-search-close" onclick="clearCatalogSearch()" aria-label="Cerrar búsqueda">✕</button>
+                    </div>
+                </div>
+                <div class="catalog-toolbar-advanced catalog-toolbar-compact">
+                    <select id="filtro-stock" class="input-box" onchange="actualizarFiltrosCatalogo()">
+                        <option value="todos">Todo stock</option>
+                        <option value="disponibles">Disponibles</option>
+                        <option value="bajo">Stock bajo</option>
+                        <option value="agotados">Agotados</option>
+                    </select>
+                    <select id="filtro-promo" class="input-box" onchange="actualizarFiltrosCatalogo()">
+                        <option value="todos">Con promo</option>
+                        <option value="con">Solo promo</option>
+                        <option value="sin">Sin promo</option>
+                    </select>
+                    <select id="orden-catalogo" class="input-box" onchange="actualizarFiltrosCatalogo()">
+                        <option value="nombre">Nombre</option>
+                        <option value="precio-asc">Precio ↑</option>
+                        <option value="precio-desc">Precio ↓</option>
+                        <option value="stock-desc">Stock ↓</option>
+                    </select>
+                </div>
+                <div class="category-toolbar compact-category-toolbar">
+                    <div class="category-toolbar-main compact-category-main">
+                        <button type="button" id="catalog-search-toggle-mobile" class="compact-icon-btn catalog-search-mini" aria-expanded="false" aria-controls="catalog-search-row" onclick="toggleCatalogSearch()" aria-label="Buscar producto"><span class="search-toggle-icon" aria-hidden="true">🔍</span></button>
+                        <select id="category-picker" class="input-box category-select" onchange="seleccionarCategoriaDesdePicker(this.value)">
+                            <option value="Todos">Todas las categorías</option>
+                        </select>
+                        <button type="button" id="category-search-toggle" class="compact-icon-btn" aria-expanded="false" aria-controls="category-search-row" onclick="toggleCategorySearch()" aria-label="Buscar categoría">
+                            <span aria-hidden="true">🔍</span>
+                        </button>
+                    </div>
+                    <div class="category-search-row is-collapsed" id="category-search-row" hidden>
+                        <div class="category-search-field">
+                            <button type="button" class="compact-icon-btn compact-icon-left" onclick="toggleCategorySearch(true)" aria-label="Buscar categoría">
+                                <span aria-hidden="true">🔍</span>
+                            </button>
+                            <input type="search" id="category-search" class="input-box category-search" placeholder="Buscar categoría..." oninput="filtrarCategoriasTexto(this.value)">
+                            <button type="button" class="catalog-search-close" onclick="clearCategorySearch()" aria-label="Cerrar búsqueda de categoría">✕</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="filtros-cat-wrap compact-filtros-wrap">
+                    <div class="filtros-cat" id="contenedor-filtros"></div>
+                </div>
+                <div class="grid-catalogo" id="contenedor-productos"></div>
+            </div>
+
+            <div id="catalog-panel-nuevo" class="catalog-subpanel">
+                <div class="catalog-create-grid">
+                    <button class="toolbar-action-btn btn-add create-main-btn" onclick="abrirModalNuevo()">+ Nuevo</button>
+                    <button class="toolbar-action-btn btn-ghost" onclick="abrirImportadorCatalogo()">Importar</button>
+                    <button class="toolbar-action-btn btn-ghost" onclick="exportarCatalogoExcel()">Exportar</button>
+                </div>
+            </div>
+
+            <input type="file" id="catalog-import-input" accept=".xlsx,.xls,.csv" hidden onchange="manejarImportacionCatalogo(event)">
+            <datalist id="categorias-default-list"></datalist>
+        </section>
+
+        <section id="vista-carrito" class="vista activa">
+            <div class="venta-hero-card">
+                <div class="venta-hero-top">
+                    <div>
+                        <h2>Venta</h2>
+                    </div>
+                    <div class="venta-hero-actions">
+                        <button class="btn-mini venta-add-products" onclick="cambiarVista('catalogo', document.querySelectorAll('nav button')[1])">+ Productos</button>
+                        <button class="btn-mini btn-ghost venta-clear-btn" onclick="limpiarCarrito()">Limpiar</button>
+                    </div>
+                </div>
+
+            </div>
+            <div id="venta-edit-banner" class="edit-banner" hidden>
+                <div>
+                    <b>Editando venta</b>
+                    <p>Modifica datos o agrega productos si el cliente pidió más. El inventario se ajustará por diferencia.</p>
+                </div>
+                <button class="btn-mini btn-danger-soft" onclick="cancelarEdicionVenta()">Cancelar edición</button>
+            </div>
+            <h2 class="section-title-mini">Cliente</h2>
+
+            <div class="grid-2-col carrito-compact-grid">
+                <input type="text" id="c-nombre" class="input-box" placeholder="Nombre del Cliente">
+                <input type="tel" id="c-tel" class="input-box" placeholder="Teléfono del Cliente">
+            </div>
+
+            <div class="grid-2-col carrito-compact-grid">
+                <select id="c-depto" class="input-box" onchange="cargarMunicipios()"></select>
+                <select id="c-muni" class="input-box"><option value="">Seleccione Municipio</option></select>
+            </div>
+            <textarea id="c-dir" class="input-box input-wide" placeholder="Dirección Exacta..." rows="2"></textarea>
+
+            <div class="grid-2-col carrito-compact-grid">
+                <select id="c-paquetera" class="input-box">
+                    <option value="Local">Entrega Local</option>
+                    <option value="Forza">Forza Delivery</option>
+                    <option value="C807">C807</option>
+                    <option value="Cargo Expreso">Cargo Expreso</option>
+                </select>
+                <select id="tipoEnvio" class="input-box" onchange="calcularTotalesCarrito()">
+                    <option value="local">Recogida Local</option>
+                    <option value="normal">Envío Normal</option>
+                    <option value="contra_entrega">Pagar al recibir (CCE)</option>
+                </select>
+            </div>
+
+            <h2 style="font-size: 16px; margin: 25px 0 15px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Orden</h2>
+            <div class="gift-toolbar">
+                <div>
+                    <h3>Regalo</h3>
+                </div>
+                <button class="btn-mini btn-gift-trigger" onclick="abrirModalRegalo()">🎁 Regalo</button>
+            </div>
+            <div id="gift-summary" class="gift-summary"></div>
+            <div id="lista-carrito"></div>
+
+            <div class="checkout-summary">
+                <div class="summary-row"><span>Ahorro promociones</span><span id="txt-aho" class="summary-value is-success">- Lps. 0</span></div>
+                <div class="summary-row"><span>Costo envío</span><span id="txt-env" class="summary-value">Lps. 0</span></div>
+                <div class="summary-row is-warning" id="div-com"><span>Comisión (CCE)</span><span id="txt-com" class="summary-value">Lps. 0</span></div>
+                <div class="summary-total"><span>TOTAL A PAGAR</span><span id="txt-tot">Lps. 0</span></div>
+            </div>
+
+            <div class="grid-2-col checkout-actions-grid" style="margin-bottom: 10px;">
+                <button class="btn-block btn-action btn-whatsapp" onclick="enviarWhatsApp()">WhatsApp</button>
+                <button class="btn-block btn-action btn-share" onclick="generarImagenFactura()">Factura</button>
+            </div>
+            <div class="grid-2-col checkout-actions-grid" style="margin-bottom: 10px;">
+                <button class="btn-block btn-action btn-ticket" onclick="imprimirTicket()">Ticket</button>
+                <button class="btn-block btn-action btn-cloud" onclick="respaldarAhora()">Nube</button>
+            </div>
+            <select id="factura-formato" class="input-box" onchange="actualizarFormatoFactura()">
+                <option value="carta">Factura</option>
+                <option value="ticket">Ticket</option>
+            </select>
+            <div class="grid-2-col">
+                <button class="btn-block btn-action btn-save" onclick="guardarCotizacion()">Guardar</button>
+                <button class="btn-block btn-add" id="btn-procesar-venta" onclick="procesarVenta()">Vender</button>
+            </div>
+        </section>
+
+        <section id="vista-cotizaciones" class="vista">
+            <div class="section-head orders-head">
+                <div>
+                    
+                    <h2>Órdenes pendientes</h2>
+                    
+                </div>
+                <button class="btn-mini" onclick="iniciarVentaRapida()">Nueva venta</button>
+            </div>
+            <div id="lista-cotizaciones" class="orders-list"></div>
+        </section>
+
+
+
+        <section id="vista-ventas" class="vista">
+            <div class="section-head">
+                <div>
+                    
+                    <h2>Ventas facturadas</h2>
+                    
+                </div>
+                <button class="btn-mini" onclick="cargarHistorialVentas()">Sincronizar</button>
+            </div>
+
+            <div class="ventas-resumen">
+                <div class="dash-card"><h3>Órdenes activas</h3><p id="ventas-count">0</p></div>
+                <div class="dash-card"><h3>Ticket promedio</h3><p id="ventas-promedio">Lps. 0</p></div>
+                <div class="dash-card card-full"><h3>Total Facturado</h3><p id="ventas-total" style="color: var(--success);">Lps. 0</p></div>
+            </div>
+
+            <div class="ventas-toolbar ventas-toolbar-plus">
+                <input type="text" id="buscador-ventas" class="input-box" placeholder="Buscar por cliente, teléfono, destino o código..." oninput="renderVentas()">
+                <select id="ventas-filtro-estado" class="input-box" onchange="renderVentas()">
+                    <option value="">Todos los estados</option>
+                    <option value="facturada">Facturadas</option>
+                    <option value="actualizada">Actualizadas</option>
+                    <option value="anulada">Anuladas</option>
+                </select>
+                <input type="date" id="ventas-fecha-desde" class="input-box" onchange="renderVentas()" aria-label="Ventas desde">
+                <input type="date" id="ventas-fecha-hasta" class="input-box" onchange="renderVentas()" aria-label="Ventas hasta">
+                <button class="btn-mini btn-ghost" onclick="limpiarFiltrosVentas()">Limpiar filtros</button>
+            </div>
+            <div class="ventas-quick-filters" id="ventas-quick-filters">
+                <button class="quick-filter-chip activo" type="button" data-filter="todos" onclick="aplicarFiltroRapidoVentas('todos', this)">Todo</button>
+                <button class="quick-filter-chip" type="button" data-filter="hoy" onclick="aplicarFiltroRapidoVentas('hoy', this)">Hoy</button>
+                <button class="quick-filter-chip" type="button" data-filter="7dias" onclick="aplicarFiltroRapidoVentas('7dias', this)">Últimos 7 días</button>
+                <button class="quick-filter-chip" type="button" data-filter="facturada" onclick="aplicarFiltroRapidoVentas('facturada', this)">Facturadas</button>
+                <button class="quick-filter-chip" type="button" data-filter="anulada" onclick="aplicarFiltroRapidoVentas('anulada', this)">Anuladas</button>
+            </div>
+            <div class="grid-2-col">
+                <button class="btn-block btn-soft" onclick="exportarVentasCSV()">Exportar CSV</button>
+                <button class="btn-block btn-soft" onclick="iniciarVentaRapida()">Nueva venta</button>
+            </div>
+            <div id="lista-ventas"></div>
+        </section>
+
+        <section id="vista-dashboard" class="vista">
+            <div class="section-head">
+                <div>
+                    
+                    <h2>Panel financiero</h2>
+                    
+                </div>
+                <button class="btn-mini" onclick="actualizarDashboard()">Actualizar</button>
+            </div>
+            <div class="dash-grid">
+                <div class="dash-card card-full"><h3>Ventas activas facturadas</h3><p id="dash-ventas" style="color: var(--success); font-size: 32px;">Lps. 0</p></div>
+                <div class="dash-card"><h3>Costo vendido</h3><p id="dash-costo-vendido">Lps. 0</p></div>
+                <div class="dash-card"><h3>Ganancia real</h3><p id="dash-gan-real">Lps. 0</p></div>
+                <div class="dash-card"><h3>Ticket promedio</h3><p id="dash-ticket">Lps. 0</p></div>
+                <div class="dash-card"><h3>Ventas hoy</h3><p id="dash-hoy">Lps. 0</p></div>
+                <div class="dash-card"><h3>Inversión Actual</h3><p id="dash-inv">Lps. 0</p></div>
+                <div class="dash-card"><h3>Proyección Venta</h3><p id="dash-proy">Lps. 0</p></div>
+                <div class="dash-card card-full" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success);"><h3>Ganancia Neta Esperada</h3><p id="dash-gan" style="color: var(--success); font-size: 28px;">Lps. 0</p></div>
+                <div class="dash-card"><h3>Órdenes activas</h3><p id="dash-ordenes">0</p></div>
+                <div class="dash-card"><h3>Artículos vendidos</h3><p id="dash-articulos-vendidos">0</p></div>
+                <div class="dash-card"><h3>Margen real</h3><p id="dash-margen">0%</p></div>
+                <div class="dash-card"><h3>Agotados</h3><p id="dash-agotados">0</p></div>
+                <div class="dash-card"><h3>Stock crítico</h3><p id="dash-stock-critico">0</p></div>
+                <div class="dash-card"><h3>Sync pendiente</h3><p id="dash-sync">0</p></div>
+                <div class="dash-card card-full"><h3>Top producto vendido</h3><p id="dash-top-prod" style="font-size:18px;">Sin ventas</p></div>
+            </div>
+
+            <div class="dashboard-extra-grid">
+                <div class="smart-panel">
+                    <div class="panel-title-row">
+                        <div>
+                            <p class="eyebrow">Últimos 7 días</p>
+                            <h3>Tendencia de ventas</h3>
+                        </div>
+                    </div>
+                    <div id="dash-mini-chart" class="mini-chart"></div>
+                </div>
+                <div class="smart-panel">
+                    <div class="panel-title-row">
+                        <div>
+                            <p class="eyebrow">Acciones sugeridas</p>
+                            <h3>Alertas inteligentes</h3>
+                        </div>
+                    </div>
+                    <div id="dash-alertas" class="compact-list"></div>
+                </div>
+            </div>
+            
+            <button class="btn-block" style="margin-top: 30px; background: transparent; border: 1px solid var(--danger); color: var(--danger);" onclick="resetearSistema()">Restablecer datos locales</button>
+        </section>
+    </main>
+
+    <footer>SDC ERP • Soluciones Digitales Comayagua • web-sdcomayagua</footer>
+
+    <div class="modal-overlay" id="modal-nuevo-producto">
+        <div class="modal-content" style="background: var(--bg-dark); max-width: 600px;">
+            <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--accent);">📦 Nuevo producto</h2>
+            
+            <div class="grid-2-col" style="margin-bottom: 15px;">
+                <label class="btn-foto-peq" style="background: var(--panel-hover); color: white; border: 1px dashed var(--accent); margin: 0;">
+                    📁 Subir Foto
+                    <input type="file" accept="image/*" onchange="actualizarFotoNp(this, 'main')">
+                </label>
+                <label class="btn-foto-peq" style="background: var(--panel-hover); color: white; border: 1px dashed var(--accent); margin: 0;">
+                    📷 Tomar Foto
+                    <input type="file" accept="image/*" capture="environment" onchange="actualizarFotoNp(this, 'main')">
+                </label>
+            </div>
+            <img id="np-img-preview" style="display:none; width:100%; height:180px; object-fit:cover; border-radius:8px; margin-bottom:15px; border:1px solid var(--border);">
+
+            <div class="grid-2-col">
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Nombre del Artículo</label>
+                    <input type="text" id="np-nombre" class="input-box" placeholder="Nombre del producto">
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Categoría</label>
+                    <input type="text" id="np-categoria" class="input-box" placeholder="Categoría" list="categorias-default-list" oninput="actualizarPreviewCategoriaNuevo()">
+                </div>
+            </div>
+
+            <div class="grid-2-col">
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Costo Real (Lps.)</label>
+                    <input type="number" id="np-costo" class="input-box price-field cost-field" placeholder="Costo real (Lps.)" inputmode="decimal">
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Precio Venta (Lps.)</label>
+                    <input type="number" id="np-precio" class="input-box price-field sale-field" placeholder="Precio de venta (Lps.)" inputmode="decimal">
+                </div>
+            </div>
+
+            <h3 style="font-size: 14px; margin: 15px 0 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Variantes y stock</h3>
+            <div id="np-variantes-lista"></div>
+            <button class="btn-block btn-dashed-soft" onclick="agregarFilaNpVar()">+ Variante</button>
+
+            <h3 style="font-size: 14px; margin: 20px 0 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Descuentos</h3>
+            <div id="np-promos-lista"></div>
+            <button class="btn-block btn-dashed-soft" onclick="agregarFilaNpPro()">+ Descuento</button>
+
+            <div class="grid-2-col modal-footer-actions" style="margin-top: 25px;">
+                <button class="btn-block btn-cerrar" onclick="cerrarModalNuevoProducto()">Cancelar</button>
+                <button class="btn-block btn-add" id="btn-guardar-firebase" onclick="guardarNuevoProductoLocal()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="modal-regalo">
+        <div class="modal-content modal-regalo-content" style="background: var(--bg-dark); max-width: 620px;">
+            <h2 style="font-size: 18px; margin-bottom: 10px; color: var(--accent);">🎁 Regalo</h2>
+            
+
+            <div class="gift-mode-switch">
+                <button type="button" id="gift-mode-catalogo" class="gift-mode-btn activo" onclick="setGiftMode('catalogo')">Del catálogo</button>
+                <button type="button" id="gift-mode-manual" class="gift-mode-btn" onclick="setGiftMode('manual')">Regalo manual</button>
+            </div>
+
+            <div id="gift-panel-catalogo" class="gift-panel">
+                <label class="gift-label">Producto del catálogo</label>
+                <select id="gift-catalog-product" class="input-box" onchange="actualizarGiftCatalogo()"></select>
+                <div class="grid-2-col">
+                    <div>
+                        <label class="gift-label">Variante / color</label>
+                        <select id="gift-catalog-variant" class="input-box"></select>
+                    </div>
+                    <div>
+                        <label class="gift-label">Cantidad</label>
+                        <input type="number" id="gift-catalog-cant" class="input-box" min="1" value="1">
+                    </div>
+                </div>
+                <div id="gift-stock-note" class="gift-stock-note"></div>
+            </div>
+
+            <div id="gift-panel-manual" class="gift-panel" hidden>
+                <label class="gift-label">Nombre del regalo</label>
+                <input type="text" id="gift-manual-name" class="input-box" placeholder="Ej. Sticker, llavero, tarjeta, accesorio">
+                <div class="grid-2-col">
+                    <div>
+                        <label class="gift-label">Detalle</label>
+                        <input type="text" id="gift-manual-variant" class="input-box" placeholder="Ej. Negro, pequeño, edición promo">
+                    </div>
+                    <div>
+                        <label class="gift-label">Cantidad</label>
+                        <input type="number" id="gift-manual-cant" class="input-box" min="1" value="1">
+                    </div>
+                </div>
+            </div>
+
+            <div id="gift-modal-list" class="gift-modal-list"></div>
+
+            <div class="grid-2-col modal-footer-actions" style="margin-top: 22px;">
+                <button class="btn-block btn-cerrar" onclick="cerrarModalRegalo()">Cerrar</button>
+                <button class="btn-block btn-add" onclick="agregarRegaloActual()">Agregar regalo</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-producto">
+        <div class="modal-content">
+            <img id="m-img" class="m-img-preview" src="">
+            <p id="m-categoria" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;"></p>
+            <h2 id="m-nombre" style="font-size: 22px; margin: 5px 0 10px; color: white;"></h2>
+            <p id="m-precio" class="precio-card" style="font-size: 20px;"></p>
+            
+            <div id="m-promos-text" class="promo-actions"></div>
+            
+            
+            <div class="variantes-container" id="m-variantes"></div>
+            
+            <p style="font-size: 13px; font-weight: bold; text-align: center; color: var(--accent);" id="m-stock-texto">Stock: -</p>
+            
+            <div class="control-cantidad">
+                <button class="btn-circulo" onclick="modCantidadModal(-1)">-</button>
+                <input type="text" id="m-cantidad" class="input-cant" value="1" readonly>
+                <button class="btn-circulo" onclick="modCantidadModal(1)">+</button>
+            </div>
+
+            <div class="modal-price-live" id="m-resumen-precio">
+                <div class="modal-price-live-item">
+                    <span>Precio por Unidad</span>
+                    <strong id="m-precio-unitario">Lps. 0</strong>
+                </div>
+                <div class="modal-price-live-item total">
+                    <span>Total</span>
+                    <strong id="m-precio-total">Lps. 0</strong>
+                </div>
+            </div>
+
+            <div class="modal-action-stack">
+                <button class="btn-block btn-add" onclick="agregarDesdeModal()" style="font-size: 16px; padding: 18px;">Añadir al Carrito</button>
+                <div class="grid-2-col modal-secondary-actions">
+                    <button class="btn-block btn-soft" onclick="compartirFichaProducto()">Compartir foto</button>
+                    <button class="btn-block" style="background: var(--success); color: white;" onclick="irAlCarrito()">Ir al Carrito</button>
+                </div>
+                <button class="btn-block btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+                <button class="btn-block btn-editar-ico" onclick="abrirModalEdicion()">Modificar Producto</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-editar">
+        <div class="modal-content" style="background: var(--bg-dark); max-width: 600px;">
+            <h2 style="font-size: 18px; margin-bottom: 15px; color: var(--warning);">Editar producto</h2>
+            
+            <div class="grid-2-col" style="margin-bottom: 15px;">
+                <label class="btn-foto-peq" style="background: var(--accent); color: white; border: none; margin: 0;">
+                    📁 Subir Foto
+                    <input type="file" accept="image/*" onchange="actualizarFoto(this, 'main')">
+                </label>
+                <label class="btn-foto-peq" style="background: var(--accent); color: white; border: none; margin: 0;">
+                    📷 Tomar Foto
+                    <input type="file" accept="image/*" capture="environment" onchange="actualizarFoto(this, 'main')">
+                </label>
+            </div>
+
+            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Nombre del Artículo</label>
+            <input type="text" id="edit-nom" class="input-box" placeholder="Nombre del producto">
+            
+            <div class="grid-2-col">
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Costo Real (Lps.)</label>
+                    <input type="number" id="edit-cos" class="input-box price-field cost-field" placeholder="Costo real (Lps.)" inputmode="decimal">
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Precio Venta (Lps.)</label>
+                    <input type="number" id="edit-pre" class="input-box price-field sale-field" placeholder="Precio de venta (Lps.)" inputmode="decimal">
+                </div>
+            </div>
+
+            <h3 style="font-size: 14px; margin: 15px 0 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Variantes y stock</h3>
+            <div id="edit-variantes-lista"></div>
+            <button class="btn-block btn-dashed-soft" onclick="agregarFilaVariante()">+ Añadir Nuevo Color</button>
+
+            <h3 style="font-size: 14px; margin: 20px 0 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;">Descuentos</h3>
+            <div id="edit-promos-lista"></div>
+            <button class="btn-block btn-dashed-soft" onclick="agregarFilaPromo()">+ Descuento</button>
+
+            <div class="grid-2-col modal-footer-actions" style="margin-top: 25px;">
+                <button class="btn-block btn-cerrar" onclick="document.getElementById('modal-editar').classList.remove('activo'); document.body.classList.remove('modal-open'); activarScrollGlobal()">Cancelar</button>
+                <button class="btn-block btn-add" id="btn-guardar-edicion" onclick="guardarEdicion()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mobile-tabbar mobile-tabbar-premium" aria-label="Navegación móvil">
+        <a class="" aria-current="false" data-tabbar="inicio" href="index.html"><span>⌂</span><b>Inicio</b></a>
+        <a class="" aria-current="false" data-tabbar="catalogo" href="productos.html"><span>▣</span><b>Productos</b></a>
+        <a class="activo" aria-current="page" data-tabbar="carrito" href="venta.html"><span>▰</span><b>Venta</b></a>
+        <a class="" aria-current="false" data-tabbar="cotizaciones" href="cotizaciones.html"><span>▤</span><b>Cotiz.</b></a>
+        <a class="" aria-current="false" data-tabbar="ventas" href="ventas.html"><span>▥</span><b>Ventas</b></a>
+        <a class="" aria-current="false" data-tabbar="dashboard" href="finanzas.html"><span>▮</span><b>Finanzas</b></a>
+    </div>
+
+    <div class="toast" id="toast-msg">Mensaje</div>
+
+    <div id="contenedor-ficha-producto">
+        <div class="share-brand-row">
+            <img src="assets/images/logo-sdcomayagua-small.png" alt="SDC" class="share-brand-logo">
+            <div>
+                <b>Soluciones Digitales Comayagua</b>
+                <span>Catálogo oficial · Presentación premium</span>
+            </div>
+        </div>
+
+        <div class="share-hero-panel">
+            <div class="share-card-top">
+                <div>
+                    <p class="share-eyebrow">SD COMAYAGUA</p>
+                    <h2 id="sp-name">Producto</h2>
+                    <p id="sp-cat" class="share-category">Categoría</p>
+                </div>
+                <div class="share-price-panel">
+                    <span>Precio unitario</span>
+                    <div class="share-price-pill" id="sp-price">Lps. 0</div>
+                </div>
+            </div>
+            <div class="share-image-wrap">
+                <img id="sp-img" src="" alt="Producto para compartir">
+            </div>
+        </div>
+
+        <div class="share-grid">
+            <div class="share-box">
+                <span>Disponibilidad</span>
+                <strong id="sp-stock">0 unidades</strong>
+            </div>
+            <div class="share-box">
+                <span>Ideal para</span>
+                <strong>Ventas por WhatsApp</strong>
+            </div>
+        </div>
+
+        <div class="share-offers">
+            <p class="share-section-title">Promociones disponibles</p>
+            <div id="sp-promos"></div>
+        </div>
+
+        <div class="share-whatsapp-cta">
+            <span>Pedidos y consultas</span>
+            <strong>WhatsApp: +504 3151-7755</strong>
+        </div>
+
+        <div class="share-footer">
+            <b>Soluciones Digitales Comayagua</b>
+            <span>Colores, combos y envíos disponibles.</span>
+        </div>
+    </div>
+
+    <div id="contenedor-factura" class="factura-carta">
+        <div class="fac-topbar"><div class="fac-top-left"><img src="assets/images/logo-sdcomayagua-small.png" alt="Logo SDC" class="fac-logo-sm"><span>SD COMAYAGUA</span></div>
+            <span id="f-codigo">ORDEN: SDC-0000</span>
+        </div>
+        <div class="fac-header">
+            <div class="fac-header-main"><img src="assets/images/logo-sdcomayagua.png" alt="Logo SDC" class="fac-logo-main"><div><h1>SOLUCIONES DIGITALES COMAYAGUA</h1>
+            <p id="f-fecha" class="fac-date"></p></div></div>
+        </div>
+        <div class="fac-info-box fac-info-grid">
+            <div><span>Cliente</span><strong id="f-cli"></strong></div>
+            <div><span>Teléfono</span><strong id="f-tel"></strong></div>
+            <div><span>Destino</span><strong id="f-zona"></strong></div>
+            <div><span>Paquetera</span><strong id="f-paq"></strong></div>
+            <div><span>Entrega</span><strong id="f-envio-tipo"></strong></div>
+            <div><span>Pago</span><strong id="f-pago"></strong></div>
+            <div class="full"><span>Dirección</span><strong id="f-dir"></strong></div>
+        </div>
+        <div class="fac-items-head"><span>Artículos</span><span>Total</span></div>
+        <div id="f-items"></div>
+        <div class="fac-totals-box">
+            <div class="fac-row"><span>Subtotal</span> <span id="f-sub">Lps. 0</span></div>
+            <div class="fac-row fac-saving"><span>Ahorro</span> <span id="f-aho">- Lps. 0</span></div>
+            <div class="fac-row"><span>Envío</span> <span id="f-env">Lps. 0</span></div>
+            <div class="fac-row" id="f-row-com"><span>CCE</span> <span id="f-com">Lps. 0</span></div>
+            <div class="fac-row fac-total"><span>TOTAL</span> <span id="f-tot">Lps. 0</span></div>
+        </div>
+        <div class="fac-contact-strip"><span>WhatsApp: +504 3151-7755</span></div>
+        
+        
+    </div>
+    <script src="assets/js/pages/venta.js"></script>
+    <script defer src="assets/js/app.js"></script>
+    <script defer src="assets/js/pages-router.js"></script>
+    <script type="module" src="assets/js/firebase.js"></script>
+
+<script>
+/* --- v92: acceso admin robusto para que el login no se quede pegado --- */
+(function(){
+  var PIN_ADMIN = '199311';
+
+  function desbloquearAdminV92(){
+    try {
+      sessionStorage.setItem('sdc_admin_ok','1');
+      localStorage.setItem('sdc_admin_ok','1');
+      sessionStorage.setItem('sdc_splash_seen','1');
+      localStorage.setItem('sdc_splash_seen','1');
+    } catch(e) {}
+
+    try {
+      window.SDC_ADMIN_OK = true;
+      document.documentElement.classList.add('sdc-admin-unlocked','sdc-splash-skip');
+      if(document.body){
+        document.body.classList.remove('login-locked');
+        document.body.classList.add('sdc-admin-ready','sdc-no-splash');
+      }
+      var login = document.getElementById('login-screen');
+      if(login){
+        login.classList.add('oculto');
+        login.setAttribute('hidden','hidden');
+        login.style.setProperty('display','none','important');
+        login.style.setProperty('visibility','hidden','important');
+        login.style.setProperty('opacity','0','important');
+        login.style.setProperty('pointer-events','none','important');
+      }
+      var splash = document.getElementById('splash-screen');
+      if(splash){
+        splash.classList.add('oculto');
+        splash.setAttribute('hidden','hidden');
+        splash.style.setProperty('display','none','important');
+      }
+      if(typeof calcularTotalesCarrito === 'function') {
+        setTimeout(function(){ try { calcularTotalesCarrito(); } catch(e) {} }, 150);
+      }
+    } catch(e) {}
+  }
+
+  window.sdcLoginSubmitV92 = function(ev){
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
+    }
+
+    var input = document.getElementById('pin-admin');
+    var error = document.getElementById('login-error');
+    var pin = (input && input.value ? input.value : '').trim();
+
+    if(pin === PIN_ADMIN || location.protocol === 'file:'){
+      desbloquearAdminV92();
+      return false;
+    }
+
+    if(error) error.textContent = 'PIN incorrecto. Ingresa el PIN de administrador.';
+    if(input) {
+      input.focus();
+      input.select();
+    }
+    return false;
+  };
+
+  function activarLoginV92(){
+    var form = document.getElementById('login-form');
+    var input = document.getElementById('pin-admin');
+    var button = form ? form.querySelector('button[type="submit"], button') : null;
+
+    try {
+      if(sessionStorage.getItem('sdc_admin_ok') === '1' || localStorage.getItem('sdc_admin_ok') === '1'){
+        desbloquearAdminV92();
+        return;
+      }
+    } catch(e) {}
+
+    if(form){
+      form.setAttribute('onsubmit','return window.sdcLoginSubmitV92(event)');
+      form.addEventListener('submit', window.sdcLoginSubmitV92, true);
+    }
+
+    if(button){
+      button.setAttribute('onclick','return window.sdcLoginSubmitV92(event)');
+      button.addEventListener('click', window.sdcLoginSubmitV92, true);
+    }
+
+    if(input){
+      input.addEventListener('keydown', function(ev){
+        if(ev.key === 'Enter') window.sdcLoginSubmitV92(ev);
+      }, true);
+    }
+
+    var login = document.getElementById('login-screen');
+    if(login){
+      login.removeAttribute('hidden');
+      login.style.removeProperty('display');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', activarLoginV92);
+  window.addEventListener('load', activarLoginV92);
+  setTimeout(activarLoginV92, 200);
+  setTimeout(activarLoginV92, 1000);
+})();
+</script>
+
+
+<script>
+/* --- v93: PIN escribible + teclado alterno --- */
+(function(){
+  var PIN_ADMIN = '199311';
+
+  function unlockV93(){
+    try {
+      sessionStorage.setItem('sdc_admin_ok','1');
+      localStorage.setItem('sdc_admin_ok','1');
+      sessionStorage.setItem('sdc_splash_seen','1');
+      localStorage.setItem('sdc_splash_seen','1');
+    } catch(e) {}
+
+    try {
+      window.SDC_ADMIN_OK = true;
+      document.documentElement.classList.add('sdc-admin-unlocked','sdc-splash-skip');
+      if(document.body){
+        document.body.classList.remove('login-locked');
+        document.body.classList.add('sdc-admin-ready','sdc-no-splash');
+      }
+      var login = document.getElementById('login-screen');
+      if(login){
+        login.classList.add('oculto');
+        login.setAttribute('hidden','hidden');
+        login.style.setProperty('display','none','important');
+      }
+      var splash = document.getElementById('splash-screen');
+      if(splash){
+        splash.classList.add('oculto');
+        splash.setAttribute('hidden','hidden');
+        splash.style.setProperty('display','none','important');
+      }
+    } catch(e) {}
+  }
+
+  window.sdcLoginSubmitV92 = window.sdcLoginSubmitV93 = function(ev){
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
+    }
+
+    var input = document.getElementById('pin-admin');
+    var error = document.getElementById('login-error');
+    var pin = (input && input.value ? input.value : '').trim();
+
+    if(pin === PIN_ADMIN || location.search.indexOf('admin=1') !== -1 || location.search.indexOf('sdc_admin=1') !== -1){
+      unlockV93();
+      return false;
+    }
+
+    if(error) error.textContent = 'PIN incorrecto.';
+    if(input) {
+      input.focus();
+      input.select();
+    }
+    return false;
+  };
+
+  function fixPinInputV93(){
+    var form = document.getElementById('login-form');
+    var input = document.getElementById('pin-admin');
+    if(!form || !input) return;
+
+    input.removeAttribute('readonly');
+    input.removeAttribute('disabled');
+    input.type = 'tel';
+    input.inputMode = 'numeric';
+    input.autocomplete = 'one-time-code';
+    input.style.setProperty('pointer-events','auto','important');
+    input.style.setProperty('user-select','text','important');
+    input.style.setProperty('-webkit-user-select','text','important');
+    input.style.setProperty('cursor','text','important');
+    input.style.setProperty('position','relative','important');
+    input.style.setProperty('z-index','999999','important');
+
+    form.setAttribute('onsubmit','return window.sdcLoginSubmitV93(event)');
+    form.addEventListener('submit', window.sdcLoginSubmitV93, true);
+
+    var btn = form.querySelector('button[type="submit"], .btn-add');
+    if(btn){
+      btn.setAttribute('onclick','return window.sdcLoginSubmitV93(event)');
+      btn.addEventListener('click', window.sdcLoginSubmitV93, true);
+    }
+
+    input.addEventListener('click', function(){
+      this.focus();
+    }, true);
+    input.addEventListener('touchstart', function(){
+      var el = this;
+      setTimeout(function(){ el.focus(); }, 40);
+    }, {passive:true});
+    input.addEventListener('keydown', function(ev){
+      if(ev.key === 'Enter') window.sdcLoginSubmitV93(ev);
+    }, true);
+
+    if(!document.getElementById('pin-keypad-v93')){
+      var keypad = document.createElement('div');
+      keypad.id = 'pin-keypad-v93';
+      keypad.className = 'pin-keypad-v93';
+      keypad.innerHTML =
+        '<button type="button" data-n="1">1</button><button type="button" data-n="2">2</button><button type="button" data-n="3">3</button>' +
+        '<button type="button" data-n="4">4</button><button type="button" data-n="5">5</button><button type="button" data-n="6">6</button>' +
+        '<button type="button" data-n="7">7</button><button type="button" data-n="8">8</button><button type="button" data-n="9">9</button>' +
+        '<button type="button" data-clear="1">Borrar</button><button type="button" data-n="0">0</button><button type="button" data-ok="1">Entrar</button>';
+      input.insertAdjacentElement('afterend', keypad);
+
+      keypad.addEventListener('click', function(ev){
+        var b = ev.target.closest('button');
+        if(!b) return;
+        ev.preventDefault();
+        if(b.dataset.n){
+          input.value = (input.value + b.dataset.n).slice(0, 6);
+          input.focus();
+          if(input.value.length === 6) window.sdcLoginSubmitV93(ev);
+        } else if(b.dataset.clear){
+          input.value = '';
+          input.focus();
+        } else if(b.dataset.ok){
+          window.sdcLoginSubmitV93(ev);
+        }
+      }, true);
+    }
+
+    try {
+      if(sessionStorage.getItem('sdc_admin_ok') === '1' || localStorage.getItem('sdc_admin_ok') === '1'){
+        unlockV93();
+      }
+    } catch(e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', fixPinInputV93);
+  window.addEventListener('load', fixPinInputV93);
+  setTimeout(fixPinInputV93, 100);
+  setTimeout(fixPinInputV93, 700);
+  setTimeout(fixPinInputV93, 1600);
+})();
+</script>
+
+</body>
+</html>
